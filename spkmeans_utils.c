@@ -1,5 +1,6 @@
 #include "spkmeans.h"
 
+
 /* Receives n observations of size d
  * Returns a nxn weighted adjacency matrix */
 double **wam(double **vectors, int n, int d) {
@@ -14,7 +15,7 @@ double **wam(double **vectors, int n, int d) {
 
     for (i = 0; i < n; ++i){
         for (j = i; j < n; ++j) {
-            if (i == j) { /*self loops not allowed*/
+            if (i == j) { /* self loops not allowed */
                 w_mat[i][j] = 0;
             }
             else {
@@ -92,7 +93,7 @@ double **lnorm(double **d_mat, double **w_mat, int n){
 
     /* create I - D^-0.5 * W * D^-0.5 */
     d_pow = pow_diag_mat(d_mat, n); /* D^-0.5 */
-    ln_mat = mult_diag_mat_diag(w_mat, d_pow, n); /* D^-0.5 * W * D^-0.5 */
+    ln_mat = mult_diag_mat_diag(d_pow, w_mat, n); /* D^-0.5 * W * D^-0.5 */
     ln_mat = i_minus_mat(ln_mat, n); /* I - D^-0.5 * W * D^-0.5 */
 
     /* free temporary mem */
@@ -174,3 +175,13 @@ void free_mat(double **mat, int n){
     free(mat);
 }
 
+/* Receives a matrix and prints matrix to stdout */
+void display_mat(double **matrix, int num_rows, int num_cols) {
+    int i, j;
+    for (i = 0; i < num_rows; ++i) {
+        for(j = 0; j < num_cols; ++j) {
+            printf("%f ", matrix[i][j]);
+        }
+        printf("\n");
+    }
+}

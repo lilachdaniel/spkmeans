@@ -12,3 +12,6 @@ double **ddg(double **w_mat, int n);
 double **pow_diag_mat(double **diag, int n);
 void free_mat(double **mat, int n);
 double **i_minus_mat(double **mat, int n);
+
+void display_mat(double **matrix, int num_rows, int num_cols);
+
