@@ -12,7 +12,10 @@
 #define GOAL_LNORM 3
 #define GOAL_JACOBI 4
 
-//static PyObject* general_capi(PyObject *self, PyObject *args);
+static PyObject* general_capi(PyObject *self, PyObject *args);
+double **form_T(double **vectors, int *k, int N, int d);
+double** renormalize(double **U, int N, int k);
+int heuristic(int k, double **J);
 
 /********************
  * Receives PyObject which are the vectors
@@ -66,42 +69,27 @@ static PyObject* general_capi(PyObject *self, PyObject *args){
         result = form_T(vectors, &k, N, d); 
         return_cols = k;
         break;
+    
     case GOAL_WAM:
-        //result = wam(vectors, N, d);
+        result = wam(vectors, N, d);
         break;
     case GOAL_DDG:
-        //W = wam(vectors, N, d);
-        //result = ddg(W, N);
-        /* Freeing W */
-        for ( i = 0; i < N; i++)
-        {
-            free(W[i]);
-        }
-        free(W);
+        W = wam(vectors, N, d);
+        result = ddg(W, N);
+
+        free_mat(W, N);
         break;
 
     case GOAL_LNORM:
-        // W = wam(vectors, N, d);
-        // D = ddg(W, N);
-        // result = lnorm()
-
-        /* Freeing W */
-        for ( i = 0; i < N; i++)
-        {
-            free(W[i]);
-        }
-        free(W);
-        /* Freeing D */
-        for ( i = 0; i < N; i++)
-        {
-            free(D[i]);
-        }
-        free(D);
+        W = wam(vectors, N, d);
+        D = ddg(W, N);
+        result = lnorm(D, W, N);
+        
+        free_mat(W, N);
+        free_mat(D, N);
         break;
 
     case GOAL_JACOBI:
-        // eigenvalues = (double*)malloc(N*sizeof(double));
-        // assert(eigenvalues);  TRYING NEW WAY OF JAC
         result = Jac(vectors, N, d);
         /* trying lilach's way where result is one dimension bigger so I must increase N */
         N += 1;
@@ -123,24 +111,14 @@ static PyObject* general_capi(PyObject *self, PyObject *args){
         PyList_SetItem(pyresult,i, Py_BuildValue("O", sub_pyresult));
     }
  
-    /* Freeing result */
-    for ( i = 0; i < N; i++)
-    {
-        free(result[i]);
-    }
-    free(result);
+    free_mat(result, N);
 
     /* Freeing vectors 
     * (if goal was Jacobi I have increased N so I must decrease before free vectors)*/
     if(goal == GOAL_JACOBI)
         N -=1;
 
-    for ( i = 0; i < N; i++)
-    {
-        free(vectors[i]);
-    }
-    free(vectors);
-   
+    free_mat(vectors, N);
 
     return pyresult;
 }
@@ -171,4 +149,62 @@ PyInit_spkmeansmodule(void) {
     }
 
     return m;
+}
+
+double **form_T(double **vectors, int *k, int N, int d){
+    double **W, **L, **D, **J, **U, **T;
+    int i, j;
+
+    W = wam(vectors, N, d);
+    D = ddg(W, N);
+    L = lnorm(D, W, N);
+    J = Jac(L, N, N);
+    *k = heuristic(*k, eigenvals); 
+
+    /* Allocating space for U and putting the eigenvectors in
+    assuming that if they needed to be sorted we will sort them in Jac */
+    U = (double**)malloc(N*sizeof(double*));
+    assert(U);
+    for(i = 0; i < N; i++){
+        U[i] = (double*)malloc((*k)*sizeof(double));
+        assert(U[i]);
+        for(j = 0; j < *k; j++){
+            U[i][j] = J[i + 1][j];
+        }
+    }
+
+    T = renormalize(U, N, *k); /* function returns normalized U */
+    
+    free_mat(W, N);
+    free_mat(D, N);
+    free_mat(L, N);
+    free_mat(J, N + 1);
+    free_mat(U, N);
+
+    return T;
+
+}
+
+/***************
+ * receives U and normalizes it
+ * *************/
+double** renormalize(double **U, int N, int k){
+    int i, j;
+    double sum = 0;
+    for(i = 0; i < N; i++){
+        for(j = 0; j < k; j++){
+            sum += pow(U[i][j], 2);
+        }
+        for(j = 0; j < k; j++){
+            U[i][j] /= pow(sum, 0.5);
+        }
+    }
+
+    return U;
+}
+
+
+/* meant to return k if k!=0 otherwise calculate k */
+int heuristic(int k, double **J){
+    return k;
 }
