@@ -135,10 +135,11 @@ void print_mat(double ** mat, int size){
     for (i = 0; i < size; i++){
         printf("[");
         for(j = 0; j < size; j++){
-            printf("%.3f", mat[i][j]);
+            printf("%.4f", mat[i][j]);
             if(j != size - 1) printf(", ");
         }
-        printf("]\n");
+        printf("]");
+        if (i != size-1) printf("\n");
     }
     printf("]\n");
 }
