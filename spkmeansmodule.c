@@ -159,7 +159,7 @@ double **form_T(double **vectors, int *k, int N, int d){
     D = ddg(W, N);
     L = lnorm(D, W, N);
     J = Jac(L, N, N);
-    *k = heuristic(*k, eigenvals); 
+    *k = heuristic(*k, J); 
 
     /* Allocating space for U and putting the eigenvectors in
     assuming that if they needed to be sorted we will sort them in Jac */
