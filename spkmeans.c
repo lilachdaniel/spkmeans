@@ -131,17 +131,14 @@ double **collect(char *input_filename, int sum_vectors, int vec_size){
 
 void print_mat(double ** mat, int size){
     int i, j;
-    printf("[");
     for (i = 0; i < size; i++){
-        printf("[");
         for(j = 0; j < size; j++){
             printf("%.4f", mat[i][j]);
-            if(j != size - 1) printf(", ");
-        }
-        printf("]");
-        if (i != size-1) printf("\n");
+            if(j != size - 1) printf(",");
+            else printf("\n");
+        } 
     }
-    printf("]\n");
+    printf("\n");
 }
 
 void find_lengths_and_amount(char *input_filename, int *size_vec_amount_vecs){
@@ -173,26 +170,24 @@ void find_lengths_and_amount(char *input_filename, int *size_vec_amount_vecs){
     size_vec_amount_vecs[1] = sum_vectors;
 }
 
+
 void print_Jac(double ** mat, int size){
     int i, j;
     /* print eigenvalues */
-    printf("[");
     for (i = 0; i < size; i++){
         printf("%.4f", mat[0][i]);
-        if(i != size - 1) printf(", ");
+        if(i != size - 1) printf(",");
+        else printf("\n");
     }
-    printf("]\n");
+    
 
     /* print eigenvectors */
-    printf("[");
     for (i = 1; i < size + 1; i++){
-        printf("[");
         for(j = 0; j < size; j++){
             printf("%.4f", mat[i][j]);
-            if(j != size - 1) printf(", ");
+            if(j != size - 1) printf(",");
+            else printf("\n");
         }
-        printf("]");
-        if (i != size) printf("\n");
     }
-    printf("]\n");
+    printf("\n");
 }

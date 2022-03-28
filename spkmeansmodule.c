@@ -214,7 +214,7 @@ int heuristic(int k, double **J, int N){
     
     qsort(J[0], N, sizeof(double), cmp);
 
-    for (i = 0; i < round(N/2); i++){
+    for (i = 0; i < int(N/2); i++){
         delta = abs(J[0][i]-J[0][i + 1]);
         if(delta > delta_max){
             delta_max = delta;

@@ -179,17 +179,6 @@ void free_mat(double **mat, int rows){
     free(mat);
 }
 
-/* Receives a matrix and prints matrix to stdout */
-void display_mat(double **matrix, int num_rows, int num_cols) {
-    int i, j;
-    for (i = 0; i < num_rows; ++i) {
-        for(j = 0; j < num_cols; ++j) {
-            printf("%f ", matrix[i][j]);
-        }
-        printf("\n");
-    }
-}
-
 
 /*************
  * Jacobi
