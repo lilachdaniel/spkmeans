@@ -72,7 +72,7 @@ int main(int argc, char *argv[]){
         case(JACOBI):
             J = Jac(vectors, sum_vecs, vec_size);         
             
-            print_Jac(J, sum_vecs + 1);
+            print_Jac(J, sum_vecs);
 
             free_mat(J, sum_vecs + 1);
             exit(0);
@@ -174,7 +174,6 @@ void find_lengths_and_amount(char *input_filename, int *size_vec_amount_vecs){
 
 void print_Jac(double ** mat, int size){
     int i, j;
-
     /* print eigenvalues */
     printf("[");
     for (i = 0; i < size; i++){
@@ -182,6 +181,7 @@ void print_Jac(double ** mat, int size){
         if(i != size - 1) printf(", ");
     }
     printf("]\n");
+
     /* print eigenvectors */
     printf("[");
     for (i = 1; i < size + 1; i++){
@@ -190,7 +190,8 @@ void print_Jac(double ** mat, int size){
             printf("%.4f", mat[i][j]);
             if(j != size - 1) printf(", ");
         }
-        printf("]\n");
+        printf("]");
+        if (i != size) printf("\n");
     }
     printf("]\n");
 }

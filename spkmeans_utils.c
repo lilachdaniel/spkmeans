@@ -266,8 +266,7 @@ double **Jac(double **A, int num_cols, int num_rows){
         return_array[idx] = (double*)calloc(num_cols, sizeof(double));
         assert(return_array[idx]);
         for(sub_idx = 0; sub_idx < num_cols; sub_idx++)
-            return_array[idx][sub_idx] = idx < num_rows ? V[idx][sub_idx] : A[idx][idx];
-
+            return_array[idx][sub_idx] = idx == 0 ? A[sub_idx][sub_idx] : V[idx - 1][sub_idx];
     }
 
     free_mat(P, num_rows); 
