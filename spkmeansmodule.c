@@ -15,7 +15,8 @@
 static PyObject* general_capi(PyObject *self, PyObject *args);
 double **form_T(double **vectors, int *k, int N, int d);
 double** renormalize(double **U, int N, int k);
-int heuristic(int k, double **J);
+int heuristic(int k, double **J, int N);
+int cmp(const void * a, const void * b);
 
 /********************
  * Receives PyObject which are the vectors
@@ -60,7 +61,7 @@ static PyObject* general_capi(PyObject *self, PyObject *args){
     }
 
     /* for each goal the columns of the return matrix is different. */
-    return_cols = d; 
+    return_cols = N; 
     
     /* Run the C function */
     switch (goal)
@@ -159,7 +160,7 @@ double **form_T(double **vectors, int *k, int N, int d){
     D = ddg(W, N);
     L = lnorm(D, W, N);
     J = Jac(L, N, N);
-    *k = heuristic(*k, J); 
+    *k = heuristic(*k, J, N); 
 
     /* Allocating space for U and putting the eigenvectors in
     assuming that if they needed to be sorted we will sort them in Jac */
@@ -205,6 +206,24 @@ double** renormalize(double **U, int N, int k){
 
 
 /* meant to return k if k!=0 otherwise calculate k */
-int heuristic(int k, double **J){
-    return k;
+int heuristic(int k, double **J, int N){
+    int i, max_ind = 0;
+    double delta, delta_max = 0;
+    if (k)
+        return k;
+    
+    qsort(J[0], N, sizeof(double), cmp);
+
+    for (i = 0; i < round(N/2); i++){
+        delta = abs(J[0][i]-J[0][i + 1]);
+        if(delta > delta_max){
+            delta_max = delta;
+            max_ind = i;
+        }
+    }
+    return max_ind;
+}
+
+int cmp(const void * a, const void * b) {
+   return ( *(double*)a - *(double*)b );
 }

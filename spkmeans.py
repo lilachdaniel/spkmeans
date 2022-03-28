@@ -7,6 +7,11 @@ import spkmeansmodule as spk  # Our API
 
 seed(0)
 
+GOAL_SPK = 0
+GOAL_WAM = 1
+GOAL_DDG = 2
+GOAL_LNORM  = 3
+GOAL_JACOBI = 4
 
 # Creating Enum of Goal
 class Goal(Enum):
@@ -46,6 +51,14 @@ def read_file(input_filename):
     file.close()
     return vectors
 
+####################
+# prints matrix
+#################
+def print_mat(mat):
+    for line in mat:
+        for elem in line:
+            print(round(elem, 4), end = ", ")
+        print("")
 
 ############################
 # Reading CMD argguments
@@ -71,6 +84,8 @@ if goal == Goal.SPK:
     if k <= 1: term("Invalid Input!")
     if k >= N: term("Invalid Input!")
 
+    t_mat = spk.general_capi(vectors, k, N, d, GOAL_SPK)
+
     ## Call my_spk from our module spkmeans
     ## my_spk: input: vectors, k, len(vectors) = N, len(vectors[0]) = d, int goal
     ##         return: data_points
@@ -79,15 +94,20 @@ if goal == Goal.SPK:
     ## k_means from hw1
 
 elif goal == Goal.WAM:
-    pass
+    w_mat = spk.general_capi(vectors, 0, N, d, GOAL_WAM)
+    print_mat(w)
 elif goal == Goal.DDG:
-    pass
+    d_mat = spk.general_capi(vectors, 0, N, d, GOAL_DDG)
+    print_mat(d_mat)
 elif goal == Goal.LNORM:
-    pass
+    l_mat = spk.general_capi(vectors, 0, N, d, GOAL_LNORM)
+    print_mat(l_mat)
 elif goal == Goal.JACOBI:
-    eigvals_and_eigvecs = spk.general_capi(vectors, 0, N, d, "jacobi")
-    print(eigvals_and_eigvecs[0])
-    print(eigvals_and_eigvecs[1:])
+    eigvals_and_eigvecs = spk.general_capi(vectors, 0, N, d, GOAL_JACOBI)
+    for elem in eigvals_and_eigvecs[0]:
+        print(round(elem, 4), end = ", ")
+    print("")
+    print_mat(eigvals_and_eigvecs[1:])
 else:
     term("Invalid Input!")
 
@@ -114,3 +134,5 @@ else:
 #                 print('%.4f' % x)
 #             else:
 #                 print('%.4f' % x, end=", ")
+
+

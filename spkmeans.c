@@ -62,7 +62,7 @@ int main(int argc, char *argv[]){
             D = ddg(W, sum_vecs);
             L = lnorm(D, W, sum_vecs);
 
-            print_mat(D, sum_vecs);
+            print_mat(L, sum_vecs);
         
             free_mat(W, sum_vecs);
             free_mat(D, sum_vecs);
