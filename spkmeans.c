@@ -1,5 +1,9 @@
 #include "spkmeans.h"
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <assert.h>
+#include <string.h>
 
 double **collect(char *input_filename, int sum_vectors, int vec_size);
 void find_lengths_and_amount(char *input_filename, int *size_vec_amount_vecs);
@@ -7,10 +11,10 @@ void print_mat(double ** mat, int size);
 void print_Jac(double ** mat, int size); 
 
 enum Goal {
-    wam = 0,
-    ddg = 1,
-    lnorm = 2,
-    jacobi = 3
+    WAM = 0,
+    DDG = 1,
+    LNORM = 2,
+    JACOBI = 3
 };
 
 int main(int argc, char *argv[]){
@@ -22,10 +26,10 @@ int main(int argc, char *argv[]){
 
     if(argc != 3) goto term_input;
     enum Goal gl;
-    if(!strcomp(argv[1], "wam")) gl = wam;
-    else if(!strcomp(argv[1], "ddg")) gl = ddg;
-    else if(!strcomp(argv[1], "lnorm")) gl = lnorm;
-    else if(!strcomp(argv[1], "jacobi")) gl = jacobi;
+    if(!strcmp(argv[1], "wam")) gl = WAM;
+    else if(!strcmp(argv[1], "ddg")) gl = DDG;
+    else if(!strcmp(argv[1], "lnorm")) gl = LNORM;
+    else if(!strcmp(argv[1], "jacobi")) gl = JACOBI;
     else goto term_input;
 
     /* Finding length of vectors and amount of vectors*/
@@ -37,13 +41,13 @@ int main(int argc, char *argv[]){
     vectors = collect(argv[2], sum_vecs, vec_size);
     
     switch(gl){
-        case(wam):
+        case(WAM):
             W = wam(vectors, sum_vecs, vec_size);
             print_mat(W, sum_vecs);
             free_mat(W, sum_vecs); 
             exit(0);
         
-        case(ddg):
+        case(DDG):
             W = wam(vectors, sum_vecs, vec_size);
             D = ddg(W, sum_vecs);
         
@@ -53,7 +57,7 @@ int main(int argc, char *argv[]){
             free_mat(D, sum_vecs);
             exit(0);
         
-        case(lnorm):
+        case(LNORM):
             W = wam(vectors, sum_vecs, vec_size);
             D = ddg(W, sum_vecs);
             L = lnorm(D, W, sum_vecs);
@@ -65,7 +69,7 @@ int main(int argc, char *argv[]){
             free_mat(L, sum_vecs);
             exit(0);
         
-        case(jacobi):
+        case(JACOBI):
             J = Jac(vectors, sum_vecs, vec_size);         
             
             print_Jac(J, sum_vecs + 1);
@@ -137,6 +141,35 @@ void print_mat(double ** mat, int size){
         printf("]\n");
     }
     printf("]\n");
+}
+
+void find_lengths_and_amount(char *input_filename, int *size_vec_amount_vecs){
+
+    int sum_vectors = 0, sum_cords = 0;
+    char c;
+
+    FILE *ifp = NULL;
+    ifp = fopen(input_filename, "r");
+    if(ifp==NULL){
+        printf("An Error Has Occurred");
+        exit(1);
+        }
+
+    /* Finding size of vector and amount of vectors*/
+    while ( ( c = fgetc( ifp ) ) != EOF ) {
+        if ( c == '\n' ){
+            sum_vectors++;
+            sum_cords++;
+        }
+        else if (c == ',')
+        {
+            sum_cords++;
+        }
+    }
+    fclose(ifp);
+
+    size_vec_amount_vecs[0] = sum_cords/sum_vectors;
+    size_vec_amount_vecs[1] = sum_vectors;
 }
 
 void print_Jac(double ** mat, int size){

@@ -1,5 +1,9 @@
 #include "spkmeans.h"
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <assert.h>
+#include <string.h>
 
 /* Receives n observations of size d
  * Returns a nxn weighted adjacency matrix */
@@ -56,7 +60,7 @@ double calc_l2(double *x1, double *x2, int d){
 /* Receives a nxn weighted adjacency matrix
  * Returns a nxn diagonal degree matrix */
 double **ddg(double **w_mat, int n) {
-    int i, j, sum;
+    int i, j;
     double **d_mat = (double **)malloc(sizeof(double *) * n);
     assert(d_mat != NULL && "ddg: error in memory allocation");
 
@@ -79,7 +83,7 @@ double **ddg(double **w_mat, int n) {
 /* Receives a nxn diagonal degree matrix and a nxn weighted adjacency matrix
  * Returns a nxn normalized graph laplacian matrix */
 double **lnorm(double **d_mat, double **w_mat, int n){
-    int i, j;
+    int i;
     double **ln_mat, **d_pow;
 
     /*initialize Lnorm matrix*/
@@ -124,7 +128,7 @@ double **i_minus_mat(double **mat, int n) {
 /* Receives a nxn diagonal matrix and a nxn matrix
  * Returns the multiplication (diag * mat * diag) */
 double **mult_diag_mat_diag(double **diag, double **mat, int n){
-    int i, j, k;
+    int i, j;
     double **mult;
 
     /* initialize mult matrix */
@@ -193,7 +197,7 @@ void display_mat(double **matrix, int num_rows, int num_cols) {
 
 /* Recieves Matrix A and dimensions and pointer to 1D eigenvalues Array
    Returns Array of eigenvectors and places in return_eigvals the eigenvalues */
-static double **Jac(double **A, int num_cols, int num_rows){
+double **Jac(double **A, int num_cols, int num_rows){
     int idx, sub_idx, i, j, loop = 0;
     double ** P, ** V, **return_array, ** A_tag, c, s;
     double off = 0;
@@ -266,9 +270,9 @@ static double **Jac(double **A, int num_cols, int num_rows){
 
     }
 
-    free(P); /* NOT GOOD ENOUGH FREE */
-    free(A_tag); /* NOT GOOD ENOUGH FREE */
-    free(V); /* NOT GOOD ENOUGH FREE */
+    free_mat(P, num_rows); 
+    free_mat(A_tag, num_rows); 
+    free_mat(V, num_rows); 
 
     return return_array;
 }
