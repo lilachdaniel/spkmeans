@@ -201,6 +201,7 @@ double **Jac(double **A, int num_cols, int num_rows){
     int idx, sub_idx, i, j, loop = 0;
     double ** P, ** V, **return_array, ** A_tag, c, s;
     double off = 0;
+    
     /* Initiating V as Identity Matrix*/
     V = (double**)calloc(num_rows, sizeof(double*));
     assert(V);
@@ -209,6 +210,7 @@ double **Jac(double **A, int num_cols, int num_rows){
         assert(V[idx]);
         V[idx][idx] = 1;
     }
+    
     /* Initiating P */
     P = (double**)calloc(num_rows, sizeof(double*));
     assert(P);
@@ -223,24 +225,23 @@ double **Jac(double **A, int num_cols, int num_rows){
         A_tag[idx] = (double*)calloc(num_cols, sizeof(double));
         assert(A_tag[idx]);
     }
-
     /* Calulating initial convergence off value of A */
     for(idx = 0; idx < num_rows; idx++){
         for(sub_idx = idx + 1; sub_idx < num_rows; sub_idx++){
             off += 2*A[idx][sub_idx]*A[idx][sub_idx];
         }
     }
+    
+    // /* checking if input matrix is diagonal */
+    // /* But pretty sure we don't need this bc 
+    // if(off == 0 && is_diagonal_matrix(A, num_rows)){
+    //     V = A;
+    // }
 
     /* Main loop of pivot. finding A_tag and changing A. 
        Finding P and multiplying to find V.
        Stopping after off is smaller than EPS or max rotations*/
-    while (off > EPS && ++loop < MAX_JAC_IT ){
-        // printf("Iteration number %d \n", loop);
-        // printf(" A: \n");
-        // print_matrix(A, num_rows);
-        // printf("V: \n");
-        // print_matrix(V, num_rows);
-
+    while ((off > EPS && ++loop < MAX_JAC_IT)){
         find_Rotation_Matrix(A, P, num_rows, &i, &j, &c, &s);
 
         // printf("i = %d, j = %d\n", i+1, j+1);
@@ -268,7 +269,7 @@ double **Jac(double **A, int num_cols, int num_rows){
         for(sub_idx = 0; sub_idx < num_cols; sub_idx++)
             return_array[idx][sub_idx] = idx == 0 ? A[sub_idx][sub_idx] : V[idx - 1][sub_idx];
     }
-
+    
     free_mat(P, num_rows); 
     free_mat(A_tag, num_rows); 
     free_mat(V, num_rows); 
