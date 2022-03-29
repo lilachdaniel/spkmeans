@@ -65,7 +65,7 @@ def print_cent(final_centroids, initial_centroid_ind):
         if i == n - 1:
             print(ind)
         else:
-            print(ind, end=", ")
+            print(ind, end =', ')
 
     # printing final centroids
     n = len(final_centroids[0])
@@ -75,7 +75,7 @@ def print_cent(final_centroids, initial_centroid_ind):
             if j == n - 1:
                 print('%.4f' % x)
             else:
-                print('%.4f' % x, end=", ")
+                print('%.4f' % x, end =', ')
 
 
 
@@ -85,7 +85,7 @@ def print_cent(final_centroids, initial_centroid_ind):
 def print_mat(mat):
     for line in mat:
         for elem in line:
-            print(round(elem, 4), end = ", ")
+            print(round(elem, 4), end =', ')
         print("")
 
 ############################
@@ -177,7 +177,7 @@ elif goal == Goal.LNORM:
 elif goal == Goal.JACOBI:
     eigvals_and_eigvecs = spk.general_capi(vectors, 0, N, d, GOAL_JACOBI)
     for elem in eigvals_and_eigvecs[0]:
-        print(round(elem, 4), end = ", ")
+        print(round(elem, 4), end =', ')
     print("")
     print_mat(eigvals_and_eigvecs[1:])
 else:
