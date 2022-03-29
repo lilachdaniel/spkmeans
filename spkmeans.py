@@ -1,5 +1,5 @@
 import argparse
-from random import seed
+from random import seed, choice, choices
 import numpy as np
 from enum import Enum
 
@@ -52,13 +52,81 @@ def read_file(input_filename):
     return vectors
 
 ####################
+# prints indecies and
+# then matrix.
+# taken from hw2
+####################
+def print_cent(final_centroids, initial_centroid_ind):
+    # printing initial centroids indices
+    n = len(initial_centroid_ind)
+
+    for i in range(n):
+        ind = initial_centroid_ind[i]
+        if i == n - 1:
+            print(ind)
+        else:
+            print(ind, end=", ")
+
+    # printing final centroids
+    n = len(final_centroids[0])
+    for i in range(k):
+        for j in range(n):
+            x = final_centroids[i][j]
+            if j == n - 1:
+                print('%.4f' % x)
+            else:
+                print('%.4f' % x, end=", ")
+
+
+
+####################
 # prints matrix
-#################
+####################
 def print_mat(mat):
     for line in mat:
         for elem in line:
             print(round(elem, 4), end = ", ")
         print("")
+
+############################
+# Kmeans++ initialization from HW2
+############################
+def delta_norm_pow2(v1, v2):
+    res = 0
+
+    for i in range(len(v1)):
+        delta = v1[i] - v2[i]
+        res += delta ** 2
+
+    return res
+
+def dist_of_closest_cent(centroids_ind, j, vectors):
+    res = float('inf')
+
+    for cent_ind in centroids_ind:
+        curr_dist = delta_norm_pow2(vectors[cent_ind], vectors[j])
+        if curr_dist < res:
+            res = curr_dist
+
+    return res
+
+def kmeanspp_algo(vectors, k):
+    DP = [0 for x in vectors]
+    centroids_ind = []
+    centroids_ind.append(choice(range(len(vectors))))
+
+    for i in range(1,k):
+
+        for j in range(len(vectors)):
+            DP[j] = (dist_of_closest_cent(centroids_ind, j, vectors))
+
+        sumD = sum(DP)
+        for j in range(len(vectors)):
+            DP[j] /= sumD
+        centroids_ind.append(np.random.choice(range(len(vectors)), p=DP))
+
+    return centroids_ind
+
 
 ############################
 # Reading CMD argguments
@@ -81,17 +149,21 @@ N = len(vectors)
 d = len(vectors[0])
 
 if goal == Goal.SPK:
-    if k <= 1: term("Invalid Input!")
+    if k < 0: term("Invalid Input!")
     if k >= N: term("Invalid Input!")
 
     t_mat = spk.general_capi(vectors, k, N, d, GOAL_SPK)
 
-    ## Call my_spk from our module spkmeans
-    ## my_spk: input: vectors, k, len(vectors) = N, len(vectors[0]) = d, int goal
-    ##         return: data_points
-    ## cluster data_points in to k clusters:
-    ## k_means++ init from hw2
-    ## k_means from hw1
+    k = len(t_mat[0])
+
+    initial_centroid_ind = kmeanspp_algo(t_mat, k)
+
+    initial_centroids = [t_mat[cent_ind] for cent_ind in initial_centroid_ind]
+
+    final_centroids = spk.fit(k, 300, initial_centroids, t_mat, k, N, 0.0)
+
+    print_cent(final_centroids, initial_centroid_ind)
+
 
 elif goal == Goal.WAM:
     w_mat = spk.general_capi(vectors, 0, N, d, GOAL_WAM)
@@ -110,29 +182,3 @@ elif goal == Goal.JACOBI:
     print_mat(eigvals_and_eigvecs[1:])
 else:
     term("Invalid Input!")
-
-################################
-## FROM HW2
-
-#
-# def print_cent(final_centroids, initial_centroind_ind):
-#     # printing initial centroids indices
-#     n = len(initial_centroind_ind)
-#     for i in range(n):
-#         ind = initial_centroind_ind[i]
-#         if i == n - 1:
-#             print(ind)
-#         else:
-#             print(ind, end=", ")
-#
-#     # printing final centroids
-#     n = len(final_centroids[0])
-#     for i in range(k):
-#         for j in range(n):
-#             x = final_centroids[i][j]
-#             if j == n - 1:
-#                 print('%.4f' % x)
-#             else:
-#                 print('%.4f' % x, end=", ")
-
-

@@ -83,17 +83,16 @@ double **ddg(double **w_mat, int n) {
 /* Receives a nxn diagonal degree matrix and a nxn weighted adjacency matrix
  * Returns a nxn normalized graph laplacian matrix */
 double **lnorm(double **d_mat, double **w_mat, int n){
-    int i;
     double **ln_mat, **d_pow;
 
-    /*initialize Lnorm matrix*/
-    ln_mat = (double **)malloc(sizeof(double *) * n);
-    assert(ln_mat != NULL && "lnorm: error in memory allocation");
+    // /*initialize Lnorm matrix*/
+    // ln_mat = (double **)malloc(sizeof(double *) * n);
+    // assert(ln_mat != NULL && "lnorm: error in memory allocation");
 
-    for (i = 0; i < n; ++i){
-        ln_mat[i] = (double *) malloc(sizeof(double) * n);
-        assert(ln_mat[i] != NULL && "lnorm: error in memory allocation");
-    }
+    // for (i = 0; i < n; ++i){
+    //     ln_mat[i] = (double *) malloc(sizeof(double) * n);
+    //     assert(ln_mat[i] != NULL && "lnorm: error in memory allocation");
+    // }
 
     /* create I - D^-0.5 * W * D^-0.5 */
     d_pow = pow_diag_mat(d_mat, n); /* D^-0.5 */

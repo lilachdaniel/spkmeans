@@ -18,6 +18,12 @@ double** renormalize(double **U, int N, int k);
 int heuristic(int k, double **J, int N);
 int cmp(const void * a, const void * b);
 
+static double **fit_c(int k, int max_it, double **centroids, double **vectors, int vec_size, int num_vecs, double eps);
+int find_cent_ind(double *v, double **centroids, int k, int vec_size);
+double *add_vecs(double *v1, double *v2, int vec_size);
+int update_centroids(int k, int vec_size, double **centroids, double **sums, int *counts, double eps);
+double delta_norm_pow2(double *v1, double *v2, int vec_size);
+
 /********************
  * Receives PyObject which are the vectors
  * Transfers to C and and runs form_T
@@ -112,6 +118,7 @@ static PyObject* general_capi(PyObject *self, PyObject *args){
         PyList_SetItem(pyresult,i, Py_BuildValue("O", sub_pyresult));
     }
  
+    
     free_mat(result, N);
 
     /* Freeing vectors 
@@ -124,11 +131,254 @@ static PyObject* general_capi(PyObject *self, PyObject *args){
     return pyresult;
 }
 
+/****************
+ * Kmeans Methods from HW2
+ * *************/
+
+static double **fit_c(int k, int max_it, double **centroids, double **vectors, int vec_size, int num_vecs, double eps){
+    int i, j, l, cent_ind, smaller_than_e;
+    double **sums;
+    int *counts;
+
+    /* Initializing sums and counts and allocating memory with starting values 0*/
+    counts = (int*)malloc(k*sizeof(int));
+    if(counts==NULL){
+        printf("An Error Has Occurred");
+        exit(1);
+    }
+    sums = (double**)malloc(k * sizeof (double *));
+    if(sums==NULL){
+        free(counts);
+        printf("An Error Has Occurred");
+        exit(1);
+    }
+
+    for(j = 0; j < k; j++){
+        sums[j] = (double*)malloc(vec_size*sizeof(double));
+        if(sums[j]==NULL){
+            free(counts);
+            free(sums);
+            printf("An Error Has Occurred");
+            exit(1);
+        }
+    }
+
+
+    /* K-means Cluster Dividing*/
+    for(i = 0; i < max_it; i++){
+        /* Initialize lists to calculate new centroids later*/
+        for(j = 0; j < k; j++){
+            counts[j] = 0;
+            for(l = 0; l < vec_size; l++){
+                sums[j][l] = 0;
+            }
+        }
+        
+        for(j = 0; j < num_vecs; j++){
+            cent_ind = find_cent_ind(vectors[j], centroids, k, vec_size);
+
+            /* Update sums and counts*/
+            sums[cent_ind] = add_vecs(sums[cent_ind], vectors[j], vec_size);
+            counts[cent_ind]++;
+        }
+
+        smaller_than_e = update_centroids(k, vec_size, centroids, sums, counts, eps);
+        if (smaller_than_e){
+            break;
+        } 
+    }
+
+    free(counts);
+
+    for(i = 0; i < k; i++){
+        free(sums[i]);
+    }
+    free(sums); 
+
+    return centroids;
+}
+
+
+double delta_norm_pow2(double *v1, double *v2, int vec_size){
+    double sum = 0;
+    int p;
+    for (p = 0; p < vec_size; p++){
+        sum += (v1[p]-v2[p])*(v1[p]-v2[p]);
+    }
+    return sum;
+}
+
+
+int find_cent_ind(double *v, double **centroids, int k, int vec_size){
+    int min_ind = 0;
+    int ind;
+    double delt;
+    double min_delta = delta_norm_pow2(v, centroids[0], vec_size);
+    for (ind = 0; ind < k; ind++){
+        delt = delta_norm_pow2(v, centroids[ind], vec_size);
+        if (delt < min_delta){
+            min_delta = delt;
+            min_ind = ind;
+        }
+    }
+    return min_ind;
+}
+
+int update_centroids(int k, int vec_size, double **centroids, double **sums, int *counts, double eps) {
+    int smaller_than_e = 1; /*true = 1, false = 0*/
+    int i,j,index;
+    double *prev_cent;
+    double delta_norm;
+    prev_cent = (double*)malloc(vec_size*sizeof(double)); /* Allocating space for 1d array of a vector*/
+    if(prev_cent==NULL){
+            free(counts);
+            for(i = 0; i < k; i++){
+                free(sums[i]);
+            }
+            free(sums);
+            printf("An Error Has Occurred");
+            exit(1);
+        }
+
+    /*update all k centroids*/
+    for (i = 0; i < k; i++) {
+        for (index = 0; index < vec_size; index++){/* want to make copy*/
+            prev_cent[index] = centroids[i][index];
+        } 
+        for (j = 0; j < vec_size; j++) {
+            centroids[i][j] = sums[i][j] / counts[i];
+        }
+
+        /*update smaller_than_e*/
+        delta_norm = pow(delta_norm_pow2(prev_cent, centroids[i], vec_size), 0.5);
+
+        if (delta_norm >= eps) {
+            smaller_than_e = 0;
+        }
+    }
+    free(prev_cent);
+    return smaller_than_e;
+}
+
+double *add_vecs(double *v1, double *v2, int vec_size) {
+    int i;
+    double *res = (double*)malloc(vec_size*sizeof(double ));
+
+    for (i = 0; i < vec_size; i++) {
+        res[i] = v1[i] + v2[i];
+    }
+
+    return res;
+}
+
+//receive python object (=the initial centroids) and returns python object (=the final centroids)
+static PyObject* fit_capi(PyObject *self, PyObject *args) {
+    
+    int i, j, k, max_it, vec_size, num_vecs;
+    PyObject *pyresult;
+    PyObject *sub_pyresult;
+    double **fit_result;
+    PyObject *py_centroids;
+    PyObject *py_vectors;
+    double **centroids;
+    double **vectors;
+    double eps;
+    PyObject *item;
+    PyObject *sub_item;
+
+
+ 
+    if(!PyArg_ParseTuple(args, "iiOOiid", &k, &max_it, &py_centroids, &py_vectors, &vec_size, &num_vecs, &eps)) {
+        return NULL;
+    }
+
+    
+    
+   /* Allocating memory for vectors and centroids */
+    vectors = (double**)malloc(num_vecs*sizeof(double*));
+    if(vectors==NULL){
+        printf("An Error Has Occurred");
+        exit(1);
+    }
+    for(j = 0; j < num_vecs; j++){
+        vectors[j] = (double*)malloc(vec_size*sizeof(double));
+        if(vectors[j]==NULL){
+
+            printf("An Error Has Occurred");
+            exit(1);
+        }
+    }
+    centroids = (double**)malloc(k*sizeof(double*));
+    if(centroids==NULL){
+        printf("An Error Has Occurred");
+        exit(1);
+    }
+    for(j = 0; j < k; j++){
+        centroids[j] = (double*)malloc(vec_size*sizeof(double));
+        if(centroids[j]==NULL){
+            printf("An Error Has Occurred");
+            exit(1);
+        }
+    }
+    /* Transfering list of lists from PyObject py_vectors to double ** vectors */
+    for (i = 0; i < num_vecs; i++){
+        item = PySequence_GetItem(py_vectors, i);
+        for(j = 0; j < vec_size; j++){
+            sub_item = PySequence_GetItem(item, j);
+            vectors[i][j] = PyFloat_AsDouble(sub_item);
+        }
+    }
+    /* Transfering list of lists from PyObject py_centroids to double ** centriods */
+    for (i = 0; i < k; i++){
+        item = PySequence_GetItem(py_centroids, i);
+        for(j = 0; j < vec_size; j++){
+            sub_item = PySequence_GetItem(item, j);
+            centroids[i][j] = PyFloat_AsDouble(sub_item);
+        }
+    }
+
+    pyresult = PyList_New(k);
+   
+    fit_result = fit_c(k, max_it, centroids, vectors, vec_size, num_vecs, eps);
+   
+    for (i = 0; i < k; i++) {
+        sub_pyresult = PyList_New(vec_size);
+        for(j = 0; j < vec_size; j ++){
+            PyList_SetItem(sub_pyresult, j, Py_BuildValue("d", fit_result[i][j]));
+        }
+        PyList_SetItem(pyresult,i, Py_BuildValue("O", sub_pyresult));
+    }
+
+    for(i = 0; i < k; i++){
+        free(centroids[i]);
+    }
+    free(centroids);
+
+    for ( i = 0; i < num_vecs; i++)
+    {
+        free(vectors[i]);
+    }
+    free(vectors);
+    
+
+    return pyresult;
+}
+
+
+/****************
+ * C - Python API Methods
+ * *************/
+
+
 static PyMethodDef capiMethods[] = {
         {"general_capi",
          (PyCFunction) general_capi,
          METH_VARARGS,
          PyDoc_STR("Function according to goal")},
+         {"fit",
+         (PyCFunction) fit_capi,
+         METH_VARARGS,
+         PyDoc_STR("k-means algorithm with randomized centroids initialization")},
          {NULL, NULL, 0, NULL}
 };
 
@@ -180,7 +430,8 @@ double **form_T(double **vectors, int *k, int N, int d){
     free_mat(D, N);
     free_mat(L, N);
     free_mat(J, N + 1);
-    free_mat(U, N);
+
+   
 
     return T;
 
@@ -214,16 +465,21 @@ int heuristic(int k, double **J, int N){
     
     qsort(J[0], N, sizeof(double), cmp);
 
-    for (i = 0; i < int(N/2); i++){
-        delta = abs(J[0][i]-J[0][i + 1]);
+    for (i = 0; i < (int)(N/2); i++){
+        delta = fabs(J[0][i]-J[0][i + 1]);
+        
         if(delta > delta_max){
             delta_max = delta;
             max_ind = i;
         }
     }
-    return max_ind;
+    return max_ind + 1;
 }
 
 int cmp(const void * a, const void * b) {
-   return ( *(double*)a - *(double*)b );
+    
+    if ( ( *(double*)a - *(double*)b ) > 0 ) return 1;
+    else if ( ( *(double*)a - *(double*)b ) < 0 ) return -1;
+    else return 0;
+    
 }
