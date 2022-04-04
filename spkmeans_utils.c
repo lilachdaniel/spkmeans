@@ -95,15 +95,6 @@ double **ddg(double **w_mat, int n) {
 double **lnorm(double **d_mat, double **w_mat, int n){
     double **ln_mat, **d_pow;
 
-    // /*initialize Lnorm matrix*/
-    // ln_mat = (double **)malloc(sizeof(double *) * n);
-    // assert(ln_mat != NULL && "lnorm: error in memory allocation");
-
-    // for (i = 0; i < n; ++i){
-    //     ln_mat[i] = (double *) malloc(sizeof(double) * n);
-    //     assert(ln_mat[i] != NULL && "lnorm: error in memory allocation");
-    // }
-
     /* create I - D^-0.5 * W * D^-0.5 */
     d_pow = pow_diag_mat(d_mat, n); /* D^-0.5 */
     ln_mat = mult_diag_mat_diag(d_pow, w_mat, n); /* D^-0.5 * W * D^-0.5 */
@@ -230,11 +221,11 @@ double **Jac(double **A, int num_cols, int num_rows){
         }
     }
     
-    // /* checking if input matrix is diagonal */
-    // /* But pretty sure we don't need this bc 
-    // if(off == 0 && is_diagonal_matrix(A, num_rows)){
-    //     V = A;
-    // }
+    printf("A:\n");
+    print_debug(A, num_rows, num_cols);
+    printf("V:\n");
+    print_debug(V, num_rows, num_cols);
+        
 
     /* Main loop of pivot. finding A_tag and changing A. 
        Finding P and multiplying to find V.
@@ -249,12 +240,20 @@ double **Jac(double **A, int num_cols, int num_rows){
 
         new_off = construct_A_tag(A, A_tag, i, j, c, s, num_rows);
 
-        convergence = new_off - prev_off;
+        convergence = prev_off - new_off;
         prev_off = new_off;
 
         if(is_diagonal_matrix(A, num_rows)){
             convergence = 0;
         }
+
+        printf("in loop %d convergence = %f\n", loop, convergence);
+        scanf("continue?%d", &idx);
+        printf("A:\n");
+        print_debug(A, num_rows, num_cols);
+        printf("V:\n");
+        print_debug(V, num_rows, num_cols);
+
 
     }
     
@@ -282,7 +281,7 @@ double **Jac(double **A, int num_cols, int num_rows){
 void find_Rotation_Matrix(double **A, double **P, int num_rows, int *i, int *j, double *c, double *s){
     int idx_i, idx_j;
     double t, sign, theta;
-    double abs_max = -INFINITY;
+    double abs_max = log(0);
 
     /* Finding absolute max value of A off diagonal */
     for(idx_i = 0; idx_i < num_rows; idx_i++){
@@ -353,7 +352,7 @@ double construct_A_tag(double **A, double **A_tag, int i, int j, double c, doubl
 void fast_Mult(double **V, int num_rows, int i, int j, double c, double s){
     double i_elem_in_row, j_elem_in_row;
     int index;
-    for(index = 0; index < num_rows; index++){        // VP[i][j] = V_Row(i)*P_Col(j)        V[i][j]
+    for(index = 0; index < num_rows; index++){        
         i_elem_in_row = c*V[index][i] - s*V[index][j];
         j_elem_in_row = s*V[index][i] + c*V[index][j];
         V[index][i] = i_elem_in_row;

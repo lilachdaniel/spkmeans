@@ -408,7 +408,7 @@ PyInit_spkmeansmodule(void) {
 double **form_T(double **vectors, int *k, int N, int d){
     double **W, **L, **D, **J, **U, **T;
     int i, j;
-    
+
     W = wam(vectors, N, d);
     
     D = ddg(W, N);
@@ -452,14 +452,15 @@ double **form_T(double **vectors, int *k, int N, int d){
  * *************/
 double** renormalize(double **U, int N, int k){
     int i, j;
-    double sum = 0;
+    double sum;
     for(i = 0; i < N; i++){
+        sum = 0;
         for(j = 0; j < k; j++){
-            sum += pow(U[i][j], 2);
+            sum += U[i][j]*U[i][j];
         }
         if(sum != 0){
             for(j = 0; j < k; j++){
-                U[i][j] /= pow(sum, 0.5);
+                U[i][j] /= sqrt(sum);
             }
         }
         

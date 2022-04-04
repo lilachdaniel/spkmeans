@@ -19,13 +19,13 @@ enum Goal {
 
 int main(int argc, char *argv[]){
     int vec_size, sum_vecs, *size_vec_amount_vecs;
+    double **vectors, **W, **D, **L, **J;
+    enum Goal gl;
 
     size_vec_amount_vecs = (int*)malloc(2*sizeof(int));
     assert(size_vec_amount_vecs);
-    double **vectors, **W, **D, **L, **J;
 
     if(argc != 3) goto term_input;
-    enum Goal gl;
     if(!strcmp(argv[1], "wam")) gl = WAM;
     else if(!strcmp(argv[1], "ddg")) gl = DDG;
     else if(!strcmp(argv[1], "lnorm")) gl = LNORM;
@@ -175,7 +175,12 @@ void print_Jac(double ** mat, int size){
     int i, j;
     /* print eigenvalues */
     for (i = 0; i < size; i++){
-        printf("%.4f", mat[0][i]);
+        /* Changing -0.0000 to 0.0000 */
+        if(mat[0][i] > -0.0001)
+            printf("%.4f", fabs(mat[0][i]));
+        else
+            printf("%.4f", mat[0][i]);
+        
         if(i != size - 1) printf(",");
         else printf("\n");
     }

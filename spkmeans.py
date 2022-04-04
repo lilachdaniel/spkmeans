@@ -196,9 +196,11 @@ elif goal == Goal.LNORM:
 elif goal == Goal.JACOBI:
     eigvals_and_eigvecs = spk.general_capi(vectors, 0, N, d, GOAL_JACOBI)
     for ind, elem in enumerate(eigvals_and_eigvecs[0]):
-        if(ind != len(eigvals_and_eigvecs[0])-1):
-            # print(str('%.4f' % elem)+',', end="")
-            print(str(format(elem, ".4f"))+',', end="")
+        if ind != len(eigvals_and_eigvecs[0])-1:
+            s = str(format(elem, ".4f"))
+            if s == "-0.0000":
+                s = "0.0000"
+            print(s+',', end="")
         else:
             # print(str('%.4f' % elem))
             print(str(format(elem, ".4f")), end="\n")
