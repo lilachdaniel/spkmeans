@@ -24,6 +24,7 @@ double *add_vecs(double *v1, double *v2, int vec_size);
 int update_centroids(int k, int vec_size, double **centroids, double **sums, int *counts, double eps);
 double delta_norm_pow2(double *v1, double *v2, int vec_size);
 
+
 /********************
  * Receives PyObject which are the vectors
  * Transfers to C and and runs form_T
@@ -65,6 +66,8 @@ static PyObject* general_capi(PyObject *self, PyObject *args){
             vectors[i][j] = PyFloat_AsDouble(sub_item);
         }
     }
+
+
 
     /* for each goal the columns of the return matrix is different. */
     return_cols = N; 
@@ -405,11 +408,16 @@ PyInit_spkmeansmodule(void) {
 double **form_T(double **vectors, int *k, int N, int d){
     double **W, **L, **D, **J, **U, **T;
     int i, j;
-
+    
     W = wam(vectors, N, d);
+    
     D = ddg(W, N);
+
     L = lnorm(D, W, N);
+
     J = Jac(L, N, N);
+    
+
     *k = heuristic(*k, J, N); 
 
     /* Allocating space for U and putting the eigenvectors in
@@ -424,8 +432,10 @@ double **form_T(double **vectors, int *k, int N, int d){
         }
     }
 
+
     T = renormalize(U, N, *k); /* function returns normalized U */
-    
+
+
     free_mat(W, N);
     free_mat(D, N);
     free_mat(L, N);
@@ -447,9 +457,12 @@ double** renormalize(double **U, int N, int k){
         for(j = 0; j < k; j++){
             sum += pow(U[i][j], 2);
         }
-        for(j = 0; j < k; j++){
-            U[i][j] /= pow(sum, 0.5);
+        if(sum != 0){
+            for(j = 0; j < k; j++){
+                U[i][j] /= pow(sum, 0.5);
+            }
         }
+        
     }
 
     return U;

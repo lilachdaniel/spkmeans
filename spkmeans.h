@@ -13,12 +13,12 @@ void free_mat(double **mat, int rows);
 
 double **i_minus_mat(double **mat, int n);
 
-
+void print_debug(double **T, int N, int k);
 
 /* Declarations for Jacobi) */
 double **Jac(double **A, int num_cols, int num_rows);
 void find_Rotation_Matrix(double **A, double **P, int num_rows, int *i, int *j, double *c, double *s);
-double construct_A_tag(double **A, double **A_tag, int i, int j, double c, double s, int num_rows, double prev_off);
+double construct_A_tag(double **A, double **A_tag, int i, int j, double c, double s, int num_rows);
 void fast_Mult(double **V, int num_rows, int i, int j, double c, double s);
 int is_diagonal_matrix(double **A, int n);
 

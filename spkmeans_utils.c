@@ -5,6 +5,16 @@
 #include <assert.h>
 #include <string.h>
 
+void print_debug(double **T, int N, int k){
+    int i, j;
+    for(i = 0; i < N; i++){
+        for(j = 0; j < k; j++)
+            printf("%f,", T[i][j]);
+        printf("\n");
+    }
+}
+
+
 /* Receives n observations of size d
  * Returns a nxn weighted adjacency matrix */
 double **wam(double **vectors, int n, int d) {
@@ -188,7 +198,7 @@ void free_mat(double **mat, int rows){
 double **Jac(double **A, int num_cols, int num_rows){
     int idx, sub_idx, i, j, loop = 0;
     double ** P, ** V, **return_array, ** A_tag, c, s;
-    double off = 0;
+    double convergence = 1, prev_off = 0, new_off;
     
     /* Initiating V as Identity Matrix*/
     V = (double**)calloc(num_rows, sizeof(double*));
@@ -213,10 +223,10 @@ double **Jac(double **A, int num_cols, int num_rows){
         A_tag[idx] = (double*)calloc(num_cols, sizeof(double));
         assert(A_tag[idx]);
     }
-    /* Calulating initial convergence off value of A */
+    /* Calulating initial off value of A */
     for(idx = 0; idx < num_rows; idx++){
         for(sub_idx = idx + 1; sub_idx < num_rows; sub_idx++){
-            off += 2*A[idx][sub_idx]*A[idx][sub_idx];
+            prev_off += 2*A[idx][sub_idx]*A[idx][sub_idx];
         }
     }
     
@@ -228,34 +238,36 @@ double **Jac(double **A, int num_cols, int num_rows){
 
     /* Main loop of pivot. finding A_tag and changing A. 
        Finding P and multiplying to find V.
-       Stopping after off is smaller than EPS or max rotations*/
-    while ((off > EPS && ++loop < MAX_JAC_IT)){
+       Stopping after convergence is smaller than EPS or max rotations*/
+    while ((convergence > EPS && ++loop < MAX_JAC_IT)){
+        
         find_Rotation_Matrix(A, P, num_rows, &i, &j, &c, &s);
-
-        // printf("i = %d, j = %d\n", i+1, j+1);
-        // printf("c = %f, s = %f\n", c, s);
-
+        
+        
         fast_Mult(V, num_rows, i, j, c, s);
 
-        off = construct_A_tag(A, A_tag, i, j, c, s, num_rows, off);
 
-        // printf("P: \n");
-        // print_matrix(P, num_rows);
+        new_off = construct_A_tag(A, A_tag, i, j, c, s, num_rows);
+
+        convergence = new_off - prev_off;
+        prev_off = new_off;
+
         if(is_diagonal_matrix(A, num_rows)){
-            off = 0;
+            convergence = 0;
         }
-    }
 
+    }
+    
     /* Place EigenValues in return_eigvals, free memory and return V */    
     /* NEED TO SORT EIGENVALUES!! */
-    /* Initiating P */
+    /* Initiating return_array */
     return_array = (double**)calloc(num_rows + 1, sizeof(double*));
     assert(return_array);
     for(idx = 0; idx < num_rows + 1; idx++){
         return_array[idx] = (double*)calloc(num_cols, sizeof(double));
         assert(return_array[idx]);
         for(sub_idx = 0; sub_idx < num_cols; sub_idx++)
-            return_array[idx][sub_idx] = idx == 0 ? A[sub_idx][sub_idx] : V[idx - 1][sub_idx];
+            return_array[idx][sub_idx] = (idx == 0) ? A[sub_idx][sub_idx] : V[idx - 1][sub_idx];
     }
     
     free_mat(P, num_rows); 
@@ -270,7 +282,7 @@ double **Jac(double **A, int num_cols, int num_rows){
 void find_Rotation_Matrix(double **A, double **P, int num_rows, int *i, int *j, double *c, double *s){
     int idx_i, idx_j;
     double t, sign, theta;
-    double abs_max = fabs(A[0][1]);
+    double abs_max = -INFINITY;
 
     /* Finding absolute max value of A off diagonal */
     for(idx_i = 0; idx_i < num_rows; idx_i++){
@@ -304,7 +316,7 @@ void find_Rotation_Matrix(double **A, double **P, int num_rows, int *i, int *j, 
 
 /* Calculates A' using A_tag as temporary space and places in A using i, j cords of abs max off-
    diag element of A and c, s calculated in Find_Rotation_Matrix and returns convergance off value */
-double construct_A_tag(double **A, double **A_tag, int i, int j, double c, double s, int num_rows, double prev_off){
+double construct_A_tag(double **A, double **A_tag, int i, int j, double c, double s, int num_rows){
     int r, ind, sub_ind;
     double A_tag_off = 0;
     for(r = 0; r < num_rows; r++){
@@ -331,34 +343,27 @@ double construct_A_tag(double **A, double **A_tag, int i, int j, double c, doubl
     /* Calulating convergence off value of new A */
     for(ind = 0; ind < num_rows; ind++){
         for(sub_ind = ind + 1; sub_ind < num_rows; sub_ind++){
-            A_tag_off += 2*A[ind][ind]*A[ind][sub_ind];
+            A_tag_off += 2*A[ind][sub_ind]*A[ind][sub_ind];
         }
     }
-    return prev_off - A_tag_off;
+    return A_tag_off;
 }
 
 /* Multiply */
 void fast_Mult(double **V, int num_rows, int i, int j, double c, double s){
-    // printf("In fast_mult: \n");
-    // printf("i = %d, j = %d\n", i+1, j+1);
-    // printf("c = %f, s = %f\n", c, s);
     double i_elem_in_row, j_elem_in_row;
     int index;
     for(index = 0; index < num_rows; index++){        // VP[i][j] = V_Row(i)*P_Col(j)        V[i][j]
         i_elem_in_row = c*V[index][i] - s*V[index][j];
         j_elem_in_row = s*V[index][i] + c*V[index][j];
-        // printf("i_elem_ = %f, j_elem = %f\n", i_elem_in_row, j_elem_in_row);
         V[index][i] = i_elem_in_row;
         V[index][j] = j_elem_in_row;
     }
-    // print_matrix(V, num_rows);
 }
 
 /* Recieves square matrix A and dimension n 
    Returns 1 if A is diagonal otherwise 0 */
 int is_diagonal_matrix(double **A, int n){
-    // printf("In diag checking if the following is diag:\n");
-    // print_matrix(A,n);
     int d_idx, d_sub_idx;
     for(d_idx = 0; d_idx < n; d_idx++){
         for(d_sub_idx = 0; d_sub_idx < n; d_sub_idx++){

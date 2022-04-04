@@ -1,5 +1,5 @@
 import argparse
-from random import seed, choice, choices
+from random import seed, choice
 import numpy as np
 from enum import Enum
 
@@ -63,9 +63,9 @@ def print_cent(final_centroids, initial_centroid_ind):
     for i in range(n):
         ind = initial_centroid_ind[i]
         if i == n - 1:
-            print(ind)
+            print(str(ind), end="\n")
         else:
-            print(ind, end =', ')
+            print(str(ind)+',', end="")
 
     # printing final centroids
     n = len(final_centroids[0])
@@ -73,10 +73,11 @@ def print_cent(final_centroids, initial_centroid_ind):
         for j in range(n):
             x = final_centroids[i][j]
             if j == n - 1:
-                print('%.4f' % x)
+                # print(str('%.4f' % x))
+                print(str(format(x, ".4f")), end="\n")
             else:
-                print('%.4f' % x, end =', ')
-
+                # print(str('%.4f' % x)+',', end="")
+                print(str(format(x, ".4f")) + ',', end="")
 
 
 ####################
@@ -84,27 +85,37 @@ def print_cent(final_centroids, initial_centroid_ind):
 ####################
 def print_mat(mat):
     for line in mat:
-        for elem in line:
-            print(round(elem, 4), end =', ')
-        print("")
+        for ind, elem in enumerate(line):
+            if ind == len(line) - 1:
+                # print(str('%.4f' % elem))
+                print(str(format(elem, ".4f")), end="\n")
+            else:
+                # print(str('%.4f' % elem)+',', end="")
+                print(str(format(elem, ".4f")) + ',', end="")
 
 ############################
 # Kmeans++ initialization from HW2
 ############################
 def delta_norm_pow2(v1, v2):
     res = 0
-
+    # print("in delta_norm_pow_2, line 96, res =  ",res)
+    # print("v1 = ", v1)
+    # print("v2 = ", v2)
     for i in range(len(v1)):
-        delta = v1[i] - v2[i]
-        res += delta ** 2
 
+        delta = v1[i] - v2[i]
+        # print("in delta_norm_pow_2, line 101, res =  ",res)
+        res = res + delta * delta
+        # print("in delta_norm_pow_2, line 103, res =  ",res)
+    # print("in delta_norm_pow_2, line 104, res =  ",res)
     return res
 
 def dist_of_closest_cent(centroids_ind, j, vectors):
     res = float('inf')
-
+    # print("in dist of closest. vectors = ", vectors)
     for cent_ind in centroids_ind:
         curr_dist = delta_norm_pow2(vectors[cent_ind], vectors[j])
+        # print("in dist_of. curr_dist = ", curr_dist)
         if curr_dist < res:
             res = curr_dist
 
@@ -119,8 +130,11 @@ def kmeanspp_algo(vectors, k):
 
         for j in range(len(vectors)):
             DP[j] = (dist_of_closest_cent(centroids_ind, j, vectors))
-
+            # print("in loop ", j, "DP[",j,"] = ", DP[j])
         sumD = sum(DP)
+        # print("sumD = ")
+        # print(sumD)
+
         for j in range(len(vectors)):
             DP[j] /= sumD
         centroids_ind.append(np.random.choice(range(len(vectors)), p=DP))
@@ -145,6 +159,7 @@ input_filename = args.a[2]
 max_iter = 300
 
 vectors = read_file(input_filename)
+
 N = len(vectors)
 d = len(vectors[0])
 
@@ -152,9 +167,13 @@ if goal == Goal.SPK:
     if k < 0: term("Invalid Input!")
     if k >= N: term("Invalid Input!")
 
+    # print("vectors = ", vectors)
+
+
     t_mat = spk.general_capi(vectors, k, N, d, GOAL_SPK)
 
     k = len(t_mat[0])
+    # print("t_mat = ", t_mat)
 
     initial_centroid_ind = kmeanspp_algo(t_mat, k)
 
@@ -167,7 +186,7 @@ if goal == Goal.SPK:
 
 elif goal == Goal.WAM:
     w_mat = spk.general_capi(vectors, 0, N, d, GOAL_WAM)
-    print_mat(w)
+    print_mat(w_mat)
 elif goal == Goal.DDG:
     d_mat = spk.general_capi(vectors, 0, N, d, GOAL_DDG)
     print_mat(d_mat)
@@ -176,9 +195,14 @@ elif goal == Goal.LNORM:
     print_mat(l_mat)
 elif goal == Goal.JACOBI:
     eigvals_and_eigvecs = spk.general_capi(vectors, 0, N, d, GOAL_JACOBI)
-    for elem in eigvals_and_eigvecs[0]:
-        print(round(elem, 4), end =', ')
-    print("")
+    for ind, elem in enumerate(eigvals_and_eigvecs[0]):
+        if(ind != len(eigvals_and_eigvecs[0])-1):
+            # print(str('%.4f' % elem)+',', end="")
+            print(str(format(elem, ".4f"))+',', end="")
+        else:
+            # print(str('%.4f' % elem))
+            print(str(format(elem, ".4f")), end="\n")
+
     print_mat(eigvals_and_eigvecs[1:])
 else:
     term("Invalid Input!")
