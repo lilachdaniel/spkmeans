@@ -422,16 +422,26 @@ double **form_T(double **vectors, int *k, int N, int d){
     double **W, **L, **D, **J, **U, **T;
 
     W = wam(vectors, N, d);
-    
+
+
     D = ddg(W, N);
+
+
 
     L = lnorm(D, W, N);
 
+
     J = Jac(L, N, N);
-    
+
+
+
     U = find_U(J, N, k);
+    /*printf("this is u...\n");
+    print_debug(U, N, *k);*/
 
     T = renormalize(U, N, *k); /* function returns normalized U */
+    /*printf("this is t...\n");
+    print_debug(T, N, *k);*/
 
     free_mat(W, N);
     free_mat(D, N);
@@ -457,6 +467,10 @@ double** find_U(double** J, int N, int *k){
     printf("\n"); */
 
     *k = heuristic(*k, ind_eigenval_arr, N); 
+    if (*k == 1) {
+        printf("An Error Has Occurred\n");
+        exit(1);
+    }
     
     U = (double**)malloc(N*sizeof(double*));
     assert(U);

@@ -5,7 +5,7 @@ from enum import Enum
 
 import spkmeansmodule as spk  # Our API
 
-np.random.seed(0)
+
 
 GOAL_SPK = 0
 GOAL_WAM = 1
@@ -58,21 +58,21 @@ def read_file(input_filename):
 ####################
 def print_cent(final_centroids, initial_centroid_ind):
     # printing initial centroids indices
-    n = len(initial_centroid_ind)
+    k = len(initial_centroid_ind)
+    n = len(final_centroids)
 
-    for i in range(n):
+    for i in range(k):
         ind = initial_centroid_ind[i]
-        if i == n - 1:
+        if i == k - 1:
             print(str(ind), end="\n")
         else:
             print(str(ind)+',', end="")
 
     # printing final centroids
-    n = len(final_centroids[0])
-    for i in range(k):
-        for j in range(n):
+    for i in range(n):
+        for j in range(k):
             x = final_centroids[i][j]
-            if j == n - 1:
+            if j == k - 1:
                 # print(str('%.4f' % x))
                 print(str(format(x, ".4f")), end="\n")
             else:
@@ -122,6 +122,7 @@ def dist_of_closest_cent(centroids_ind, j, vectors):
     return res
 
 def kmeanspp_algo(vectors, k):
+    np.random.seed(0)
     DP = [0 for x in vectors]
     centroids_ind = []
     centroids_ind.append(np.random.choice(range(len(vectors))))
@@ -165,7 +166,7 @@ N = len(vectors)
 d = len(vectors[0])
 
 if goal == Goal.SPK:
-    if k < 0: term("Invalid Input!")
+    if k < 0 or k == 1: term("Invalid Input!")
     if k >= N: term("Invalid Input!")
 
     # print("vectors = ", vectors)

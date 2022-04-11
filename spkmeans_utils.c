@@ -93,19 +93,19 @@ double **ddg(double **w_mat, int n) {
 /* Receives a nxn diagonal degree matrix and a nxn weighted adjacency matrix
  * Returns a nxn normalized graph laplacian matrix */
 double **lnorm(double **d_mat, double **w_mat, int n){
-    double **ln_mat, **d_pow, **result;
+    double **ln_mat, **d_pow;
 
     /* create I - D^-0.5 * W * D^-0.5 */
     d_pow = pow_diag_mat(d_mat, n); /* D^-0.5 */
-    /* ln_mat = mult_diag_mat_diag(d_pow, w_mat, n);  D^-0.5 * W * D^-0.5 */
+    ln_mat = mult_diag_mat_diag(d_pow, w_mat, n);  /* D^-0.5 * W * D^-0.5 */
 
-    result = square_mat_mult(d_pow, w_mat, n);
-    ln_mat = square_mat_mult(result, d_pow, n);
+   /* result = square_mat_mult(d_pow, w_mat, n);
+    ln_mat = square_mat_mult(result, d_pow, n);*/
     ln_mat = i_minus_mat(ln_mat, n); /* I - D^-0.5 * W * D^-0.5 */
 
     /* free temporary mem */
     free_mat(d_pow, n);
-    free_mat(result, n);
+    /*free_mat(result, n);*/
 
     return ln_mat;
 
