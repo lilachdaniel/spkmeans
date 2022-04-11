@@ -193,7 +193,7 @@ void free_mat(double **mat, int rows){
    Returns Array of eigenvectors and places in return_eigvals the eigenvalues */
 double **Jac(double **A, int num_cols, int num_rows){
     int idx, sub_idx, i, j, loop = 0;
-    double ** P, ** V, **return_array, ** A_tag, **temp_mat, c, s;
+    double ** P, ** V, **return_array, ** A_tag, c, s;
     double convergence = 1, prev_off = 0, new_off;
     
     /* Initiating V as Identity Matrix*/
@@ -243,15 +243,15 @@ double **Jac(double **A, int num_cols, int num_rows){
         find_Rotation_Matrix(A, P, num_rows, &i, &j, &c, &s);
         
         
-        /* fast_Mult(V, num_rows, i, j, c, s); */
+        fast_Mult(V, num_rows, i, j, c, s);
 
-        temp_mat = square_mat_mult(V, P, num_rows);
+        /* temp_mat = square_mat_mult(V, P, num_rows);
 
         for (idx = 0; idx < num_rows; idx++)
             for (sub_idx = 0; sub_idx < num_cols; sub_idx++)
                 V[idx][sub_idx] = temp_mat[idx][sub_idx];
 
-        free_mat(temp_mat, num_rows);
+        free_mat(temp_mat, num_rows); */
 
         new_off = construct_A_tag(A, A_tag, i, j, c, s, num_rows);
 

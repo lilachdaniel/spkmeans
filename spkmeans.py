@@ -5,7 +5,7 @@ from enum import Enum
 
 import spkmeansmodule as spk  # Our API
 
-seed(0)
+np.random.seed(0)
 
 GOAL_SPK = 0
 GOAL_WAM = 1
@@ -124,7 +124,7 @@ def dist_of_closest_cent(centroids_ind, j, vectors):
 def kmeanspp_algo(vectors, k):
     DP = [0 for x in vectors]
     centroids_ind = []
-    centroids_ind.append(choice(range(len(vectors))))
+    centroids_ind.append(np.random.choice(range(len(vectors))))
 
     for i in range(1,k):
 
@@ -137,6 +137,7 @@ def kmeanspp_algo(vectors, k):
 
         for j in range(len(vectors)):
             DP[j] /= sumD
+
         centroids_ind.append(np.random.choice(range(len(vectors)), p=DP))
 
     return centroids_ind
@@ -182,7 +183,7 @@ if goal == Goal.SPK:
     final_centroids = spk.fit(k, 300, initial_centroids, t_mat, k, N, 0.0)
 
     print_cent(final_centroids, initial_centroid_ind)
-
+    print("we are in python")
 
 elif goal == Goal.WAM:
     w_mat = spk.general_capi(vectors, 0, N, d, GOAL_WAM)
