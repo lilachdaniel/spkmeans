@@ -430,12 +430,8 @@ double **form_T(double **vectors, int *k, int N, int d){
     J = Jac(L, N, N);
     
     U = find_U(J, N, k);
-    printf("printing U...??!\n");
-    print_debug(U, N, *k);
-    T = renormalize(U, N, *k); /* function returns normalized U */
-    printf("printing T...\n");
-    print_debug(T, N, *k);
 
+    T = renormalize(U, N, *k); /* function returns normalized U */
 
     free_mat(W, N);
     free_mat(D, N);
@@ -504,21 +500,12 @@ ind_eigenval* sort_indicies(double** J, int N){
     ind_eigenval* ind_eigenval_arr = (ind_eigenval*)malloc(sizeof(ind_eigenval)*N);
     assert(ind_eigenval_arr);
     int i;
-    printf("printing eiganvalues before sort...\n");
     for (i = 0; i < N; i++) {
         ind_eigenval_arr[i].ind = i;
         ind_eigenval_arr[i].eigenval = J[0][i];
-        printf("%f,", ind_eigenval_arr[i].eigenval);
     }
-    printf("\n");
 
     qsort(ind_eigenval_arr, N, sizeof(ind_eigenval), cmp_by_eigenvalues);
-
-    printf("printing eiganvalues after sort...\n");
-    for (i = 0; i < N; i++) {
-        printf("%f,", ind_eigenval_arr[i].eigenval);
-    }
-    printf("\n");
 
     return ind_eigenval_arr; 
 }

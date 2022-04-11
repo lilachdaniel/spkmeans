@@ -183,7 +183,6 @@ if goal == Goal.SPK:
     final_centroids = spk.fit(k, 300, initial_centroids, t_mat, k, N, 0.0)
 
     print_cent(final_centroids, initial_centroid_ind)
-    print("we are in python")
 
 elif goal == Goal.WAM:
     w_mat = spk.general_capi(vectors, 0, N, d, GOAL_WAM)
