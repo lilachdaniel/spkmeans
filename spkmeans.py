@@ -173,10 +173,10 @@ if goal == Goal.SPK:
     t_mat = spk.general_capi(vectors, k, N, d, GOAL_SPK)
 
     k = len(t_mat[0])
-    # print("t_mat = ", t_mat)
 
     initial_centroid_ind = kmeanspp_algo(t_mat, k)
 
+    # initial_centroid_ind = np.array([172,108,164,170,185,133,13,7,3,23,134,187,11,138,184])
     initial_centroids = [t_mat[cent_ind] for cent_ind in initial_centroid_ind]
 
     final_centroids = spk.fit(k, 300, initial_centroids, t_mat, k, N, 0.0)

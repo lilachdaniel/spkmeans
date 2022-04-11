@@ -20,5 +20,6 @@ double **Jac(double **A, int num_cols, int num_rows);
 void find_Rotation_Matrix(double **A, double **P, int num_rows, int *i, int *j, double *c, double *s);
 double construct_A_tag(double **A, double **A_tag, int i, int j, double c, double s, int num_rows);
 void fast_Mult(double **V, int num_rows, int i, int j, double c, double s);
+void square_mat_mult(double **first, double **second, double **result, int N);
 int is_diagonal_matrix(double **A, int n);
 

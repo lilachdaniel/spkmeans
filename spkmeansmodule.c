@@ -12,17 +12,26 @@
 #define GOAL_LNORM 3
 #define GOAL_JACOBI 4
 
+typedef struct ind_eigenval {
+    int ind;
+    double eigenval;
+} ind_eigenval;
+
+
 static PyObject* general_capi(PyObject *self, PyObject *args);
 double **form_T(double **vectors, int *k, int N, int d);
 double** renormalize(double **U, int N, int k);
-int heuristic(int k, double **J, int N);
-int cmp(const void * a, const void * b);
+int heuristic(int k, ind_eigenval *ind_eigenval_arr, int N);
+int cmp_by_eigenvalues(const void *a, const void *b);
+ind_eigenval* sort_indicies(double** J, int N);
+double** find_U(double** J, int N, int *k);
 
 static double **fit_c(int k, int max_it, double **centroids, double **vectors, int vec_size, int num_vecs, double eps);
 int find_cent_ind(double *v, double **centroids, int k, int vec_size);
 double *add_vecs(double *v1, double *v2, int vec_size);
 int update_centroids(int k, int vec_size, double **centroids, double **sums, int *counts, double eps);
 double delta_norm_pow2(double *v1, double *v2, int vec_size);
+
 
 
 /********************
@@ -341,9 +350,13 @@ static PyObject* fit_capi(PyObject *self, PyObject *args) {
     }
 
     pyresult = PyList_New(k);
-   
+    
     fit_result = fit_c(k, max_it, centroids, vectors, vec_size, num_vecs, eps);
    
+    // printf("DEBUG fit_result  = \n");
+
+    // print_debug(fit_result, k, vec_size);
+
     for (i = 0; i < k; i++) {
         sub_pyresult = PyList_New(vec_size);
         for(j = 0; j < vec_size; j ++){
@@ -407,7 +420,6 @@ PyInit_spkmeansmodule(void) {
 
 double **form_T(double **vectors, int *k, int N, int d){
     double **W, **L, **D, **J, **U, **T;
-    int i, j;
 
     W = wam(vectors, N, d);
     
@@ -417,21 +429,8 @@ double **form_T(double **vectors, int *k, int N, int d){
 
     J = Jac(L, N, N);
     
-
-    *k = heuristic(*k, J, N); 
-
-    /* Allocating space for U and putting the eigenvectors in
-    assuming that if they needed to be sorted we will sort them in Jac */
-    U = (double**)malloc(N*sizeof(double*));
-    assert(U);
-    for(i = 0; i < N; i++){
-        U[i] = (double*)malloc((*k)*sizeof(double));
-        assert(U[i]);
-        for(j = 0; j < *k; j++){
-            U[i][j] = J[i + 1][j];
-        }
-    }
-
+    
+    U = find_U(J, N, k);
 
     T = renormalize(U, N, *k); /* function returns normalized U */
 
@@ -446,6 +445,36 @@ double **form_T(double **vectors, int *k, int N, int d){
     return T;
 
 }
+
+/* Allocating space for U and putting the sorted eigenvectors in */
+double** find_U(double** J, int N, int *k){
+    ind_eigenval* ind_eigenval_arr = sort_indicies(J, N);
+    int ind, i, j;
+    double **U;
+
+    /*printf("DEBUG\n");
+    printf("print sorted eigs:\n");
+    for(i = 0; i < *k; i++)
+        printf("%f,", ind_eigenval_arr[i].eigenval);
+    printf("\n"); */
+
+    *k = heuristic(*k, ind_eigenval_arr, N); 
+    
+    U = (double**)malloc(N*sizeof(double*));
+    assert(U);
+    for(i = 0; i < N; i++){
+        U[i] = (double*)malloc((*k)*sizeof(double));
+        assert(U[i]);
+        for(j = 0; j < *k; j++){
+            ind = ind_eigenval_arr[j].ind;
+            U[i][j] = J[i + 1][ind];
+        }
+    }
+
+    free(ind_eigenval_arr);
+    return U;
+}
+
 
 /***************
  * receives U and normalizes it
@@ -469,18 +498,41 @@ double** renormalize(double **U, int N, int k){
     return U;
 }
 
+ind_eigenval* sort_indicies(double** J, int N){
+    ind_eigenval* ind_eigenval_arr = (ind_eigenval*)malloc(sizeof(ind_eigenval)*N);
+    assert(ind_eigenval_arr);
+    int i;
+    
+    for (i = 0; i < N; i++) {
+        ind_eigenval_arr[i].ind = i;
+        ind_eigenval_arr[i].eigenval = J[0][i];
+        
+    }
+
+    qsort(ind_eigenval_arr, N, sizeof(ind_eigenval), cmp_by_eigenvalues);   
+    
+    return ind_eigenval_arr; 
+}
+
+
+int cmp_by_eigenvalues(const void *a, const void *b) {
+    ind_eigenval x = *(ind_eigenval*)a;
+    ind_eigenval y = *(ind_eigenval*)b;
+    if ( x.eigenval - y.eigenval > 0 ) return 1;
+    else if ( x.eigenval - y.eigenval < 0 ) return -1;
+    else if (x.ind - y.ind > 0) return 1;
+    else return -1;
+}
 
 /* meant to return k if k!=0 otherwise calculate k */
-int heuristic(int k, double **J, int N){
+int heuristic(int k, ind_eigenval *ind_eigenval_arr, int N){
     int i, max_ind = 0;
     double delta, delta_max = 0;
     if (k)
         return k;
-    
-    qsort(J[0], N, sizeof(double), cmp);
 
     for (i = 0; i < (int)(N/2); i++){
-        delta = fabs(J[0][i]-J[0][i + 1]);
+        delta = fabs(ind_eigenval_arr[i].eigenval - ind_eigenval_arr[i+1].eigenval);
         
         if(delta > delta_max){
             delta_max = delta;
@@ -488,12 +540,4 @@ int heuristic(int k, double **J, int N){
         }
     }
     return max_ind + 1;
-}
-
-int cmp(const void * a, const void * b) {
-    
-    if ( ( *(double*)a - *(double*)b ) > 0 ) return 1;
-    else if ( ( *(double*)a - *(double*)b ) < 0 ) return -1;
-    else return 0;
-    
 }

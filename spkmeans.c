@@ -138,7 +138,6 @@ void print_mat(double ** mat, int size){
             else printf("\n");
         } 
     }
-    printf("\n");
 }
 
 void find_lengths_and_amount(char *input_filename, int *size_vec_amount_vecs){
@@ -194,5 +193,4 @@ void print_Jac(double ** mat, int size){
             else printf("\n");
         }
     }
-    printf("\n");
 }

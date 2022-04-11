@@ -188,7 +188,7 @@ void free_mat(double **mat, int rows){
    Returns Array of eigenvectors and places in return_eigvals the eigenvalues */
 double **Jac(double **A, int num_cols, int num_rows){
     int idx, sub_idx, i, j, loop = 0;
-    double ** P, ** V, **return_array, ** A_tag, c, s;
+    double ** P, ** V, **return_array, ** A_tag, **temp_mat, c, s;
     double convergence = 1, prev_off = 0, new_off;
     
     /* Initiating V as Identity Matrix*/
@@ -214,29 +214,38 @@ double **Jac(double **A, int num_cols, int num_rows){
         A_tag[idx] = (double*)calloc(num_cols, sizeof(double));
         assert(A_tag[idx]);
     }
+    /* Initiating temp_mat */
+    temp_mat = (double**)calloc(num_rows, sizeof(double*));
+    assert(temp_mat);
+    for(idx = 0; idx < num_rows; idx++){
+        temp_mat[idx] = (double*)calloc(num_cols, sizeof(double));
+        assert(temp_mat[idx]);
+    }
     /* Calulating initial off value of A */
     for(idx = 0; idx < num_rows; idx++){
-        for(sub_idx = idx + 1; sub_idx < num_rows; sub_idx++){
-            prev_off += 2*A[idx][sub_idx]*A[idx][sub_idx];
+        for(sub_idx = 0; sub_idx < num_cols; sub_idx++){
+            if(idx != sub_idx)
+                prev_off += A[idx][sub_idx]*A[idx][sub_idx];
         }
     }
-    
-    printf("A:\n");
-    print_debug(A, num_rows, num_cols);
-    printf("V:\n");
-    print_debug(V, num_rows, num_cols);
-        
+    /*
+    // printf("A:\n");
+    // print_debug(A, num_rows, num_cols);
+    // printf("V:\n");
+    // print_debug(V, num_rows, num_cols);
+    */
 
     /* Main loop of pivot. finding A_tag and changing A. 
        Finding P and multiplying to find V.
        Stopping after convergence is smaller than EPS or max rotations*/
-    while ((convergence > EPS && ++loop < MAX_JAC_IT)){
-        
+    while ((convergence > EPS && loop++ < MAX_JAC_IT)){
+        /* printf("in line %d, loop = %d\n", __LINE__, loop); */
+
         find_Rotation_Matrix(A, P, num_rows, &i, &j, &c, &s);
         
         
-        fast_Mult(V, num_rows, i, j, c, s);
-
+        /* fast_Mult(V, num_rows, i, j, c, s); */
+        square_mat_mult(V, P, temp_mat, num_rows);
 
         new_off = construct_A_tag(A, A_tag, i, j, c, s, num_rows);
 
@@ -246,14 +255,14 @@ double **Jac(double **A, int num_cols, int num_rows){
         if(is_diagonal_matrix(A, num_rows)){
             convergence = 0;
         }
-
-        printf("in loop %d convergence = %f\n", loop, convergence);
-        scanf("continue?%d", &idx);
-        printf("A:\n");
-        print_debug(A, num_rows, num_cols);
-        printf("V:\n");
-        print_debug(V, num_rows, num_cols);
-
+        /*
+        // printf("in loop %d convergence = %f\n", loop, convergence);
+        // scanf("continue?%d", &idx);
+        // printf("A:\n");
+        // print_debug(A, num_rows, num_cols);
+        // printf("V:\n");
+        // print_debug(V, num_rows, num_cols);
+        */
 
     }
     
@@ -268,7 +277,7 @@ double **Jac(double **A, int num_cols, int num_rows){
         for(sub_idx = 0; sub_idx < num_cols; sub_idx++)
             return_array[idx][sub_idx] = (idx == 0) ? A[sub_idx][sub_idx] : V[idx - 1][sub_idx];
     }
-    
+    free_mat(temp_mat, num_rows);
     free_mat(P, num_rows); 
     free_mat(A_tag, num_rows); 
     free_mat(V, num_rows); 
@@ -285,8 +294,8 @@ void find_Rotation_Matrix(double **A, double **P, int num_rows, int *i, int *j, 
 
     /* Finding absolute max value of A off diagonal */
     for(idx_i = 0; idx_i < num_rows; idx_i++){
-        for(idx_j = 0; idx_j < num_rows; idx_j++){
-            if (fabs(A[idx_i][idx_j]) > abs_max && idx_i != idx_j){
+        for(idx_j = idx_i+1; idx_j < num_rows; idx_j++){
+            if (fabs(A[idx_i][idx_j]) > abs_max){
                 abs_max = fabs(A[idx_i][idx_j]);
                 *i = idx_i;
                 *j = idx_j;
@@ -341,11 +350,25 @@ double construct_A_tag(double **A, double **A_tag, int i, int j, double c, doubl
 
     /* Calulating convergence off value of new A */
     for(ind = 0; ind < num_rows; ind++){
-        for(sub_ind = ind + 1; sub_ind < num_rows; sub_ind++){
-            A_tag_off += 2*A[ind][sub_ind]*A[ind][sub_ind];
+        for(sub_ind = 0; sub_ind < num_rows; sub_ind++){
+            if(ind != sub_ind)
+                A_tag_off += A[ind][sub_ind]*A[ind][sub_ind];
         }
     }
     return A_tag_off;
+}
+
+/* function to multiply two square matrices then copy in to first */
+void square_mat_mult(double **first, double **second, double **result, int N){
+    int i, j, k;
+    for (i = 0; i < N; i++)
+        for (j = 0; j < N; j++)
+            for (k = 0; k < N; k++)
+                result[i][j] += first[i][k] * second[k][j];
+
+    for (i = 0; i < N; i++) 
+        for (j = 0; j < N; j++) 
+            first[i][j] = result[i][j];
 }
 
 /* Multiply */
