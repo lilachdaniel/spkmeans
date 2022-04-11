@@ -94,11 +94,10 @@ double **ddg(double **w_mat, int n) {
  * Returns a nxn normalized graph laplacian matrix */
 double **lnorm(double **d_mat, double **w_mat, int n){
     double **ln_mat, **d_pow, **result;
-    int i;
 
     /* create I - D^-0.5 * W * D^-0.5 */
     d_pow = pow_diag_mat(d_mat, n); /* D^-0.5 */
-    /* ln_mat = mult_diag_mat_diag(d_pow, w_mat, n); /* D^-0.5 * W * D^-0.5 */
+    /* ln_mat = mult_diag_mat_diag(d_pow, w_mat, n);  D^-0.5 * W * D^-0.5 */
 
     result = square_mat_mult(d_pow, w_mat, n);
     ln_mat = square_mat_mult(result, d_pow, n);

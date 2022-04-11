@@ -1,3 +1,0 @@
-C:/Users/lilac/Documents/spkmeans/cmake-build-debug/CMakeFiles/spkmeans.dir
-C:/Users/lilac/Documents/spkmeans/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/lilac/Documents/spkmeans/cmake-build-debug/CMakeFiles/rebuild_cache.dir
