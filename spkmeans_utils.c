@@ -93,15 +93,20 @@ double **ddg(double **w_mat, int n) {
 /* Receives a nxn diagonal degree matrix and a nxn weighted adjacency matrix
  * Returns a nxn normalized graph laplacian matrix */
 double **lnorm(double **d_mat, double **w_mat, int n){
-    double **ln_mat, **d_pow;
+    double **ln_mat, **d_pow, **result;
+    int i;
 
     /* create I - D^-0.5 * W * D^-0.5 */
     d_pow = pow_diag_mat(d_mat, n); /* D^-0.5 */
-    ln_mat = mult_diag_mat_diag(d_pow, w_mat, n); /* D^-0.5 * W * D^-0.5 */
+    /* ln_mat = mult_diag_mat_diag(d_pow, w_mat, n); /* D^-0.5 * W * D^-0.5 */
+
+    result = square_mat_mult(d_pow, w_mat, n);
+    ln_mat = square_mat_mult(result, d_pow, n);
     ln_mat = i_minus_mat(ln_mat, n); /* I - D^-0.5 * W * D^-0.5 */
 
     /* free temporary mem */
     free_mat(d_pow, n);
+    free_mat(result, n);
 
     return ln_mat;
 
@@ -214,13 +219,7 @@ double **Jac(double **A, int num_cols, int num_rows){
         A_tag[idx] = (double*)calloc(num_cols, sizeof(double));
         assert(A_tag[idx]);
     }
-    /* Initiating temp_mat */
-    temp_mat = (double**)calloc(num_rows, sizeof(double*));
-    assert(temp_mat);
-    for(idx = 0; idx < num_rows; idx++){
-        temp_mat[idx] = (double*)calloc(num_cols, sizeof(double));
-        assert(temp_mat[idx]);
-    }
+
     /* Calulating initial off value of A */
     for(idx = 0; idx < num_rows; idx++){
         for(sub_idx = 0; sub_idx < num_cols; sub_idx++){
@@ -245,7 +244,14 @@ double **Jac(double **A, int num_cols, int num_rows){
         
         
         /* fast_Mult(V, num_rows, i, j, c, s); */
-        square_mat_mult(V, P, temp_mat, num_rows);
+
+        temp_mat = square_mat_mult(V, P, num_rows);
+
+        for (idx = 0; idx < num_rows; idx++)
+            for (sub_idx = 0; sub_idx < num_cols; sub_idx++)
+                V[idx][sub_idx] = temp_mat[idx][sub_idx];
+
+        free_mat(temp_mat, num_rows);
 
         new_off = construct_A_tag(A, A_tag, i, j, c, s, num_rows);
 
@@ -277,7 +283,7 @@ double **Jac(double **A, int num_cols, int num_rows){
         for(sub_idx = 0; sub_idx < num_cols; sub_idx++)
             return_array[idx][sub_idx] = (idx == 0) ? A[sub_idx][sub_idx] : V[idx - 1][sub_idx];
     }
-    free_mat(temp_mat, num_rows);
+
     free_mat(P, num_rows); 
     free_mat(A_tag, num_rows); 
     free_mat(V, num_rows); 
@@ -358,17 +364,24 @@ double construct_A_tag(double **A, double **A_tag, int i, int j, double c, doubl
     return A_tag_off;
 }
 
-/* function to multiply two square matrices then copy in to first */
-void square_mat_mult(double **first, double **second, double **result, int N){
+/* function to multiply two square matrices */
+double **square_mat_mult(double **first, double **second, int N){
     int i, j, k;
+    double **result;
+
+    result = (double **) malloc(sizeof(double *) * N);
+    assert(result != NULL && "square_mat_mult: error in memory allocation");
+    for (i = 0; i < N; ++i) {
+        result[i] = (double *) malloc(sizeof(double) * N);
+        assert(result[i] != NULL && "square_mat_mult: error in memory allocation");
+    }
+
     for (i = 0; i < N; i++)
         for (j = 0; j < N; j++)
             for (k = 0; k < N; k++)
                 result[i][j] += first[i][k] * second[k][j];
 
-    for (i = 0; i < N; i++) 
-        for (j = 0; j < N; j++) 
-            first[i][j] = result[i][j];
+    return result;
 }
 
 /* Multiply */
