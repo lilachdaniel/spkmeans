@@ -5,26 +5,30 @@
 #include <assert.h>
 #include <string.h>
 
-void print_debug(double **T, int N, int k){
-    int i, j;
-    for(i = 0; i < N; i++){
-        for(j = 0; j < k; j++)
-            printf("%f,", T[i][j]);
-        printf("\n");
+void err(bool is_invalid_input) {
+    if (is_invalid_input) {
+        printf("Invalid Input!\n");
     }
+    else {
+        printf("An Error Has Occurred\n");
+    }
+    exit(1);
 }
-
 
 /* Receives n observations of size d
  * Returns a nxn weighted adjacency matrix */
 double **wam(double **vectors, int n, int d) {
     int i,j;
     double **w_mat = (double **)malloc(sizeof(double *) * n);
-    assert(w_mat != NULL && "wam: error in memory allocation");
+    if (!w_mat) {
+        err(FALSE);
+    }
 
     for (i = 0; i < n; ++i){
         w_mat[i] = (double *) malloc(sizeof(double) * n);
-        assert(w_mat[i] != NULL && "wam: error in memory allocation");
+        if (!w_mat[i]) {
+            err(FALSE);
+        }
     }
 
     for (i = 0; i < n; ++i){
@@ -72,11 +76,15 @@ double calc_l2(double *x1, double *x2, int d){
 double **ddg(double **w_mat, int n) {
     int i, j;
     double **d_mat = (double **)malloc(sizeof(double *) * n);
-    assert(d_mat != NULL && "ddg: error in memory allocation");
+    if (!d_mat) {
+        err(FALSE);
+    }
 
     for (i = 0; i < n; ++i) {
         d_mat[i] = (double *)malloc(sizeof(double) * n);
-        assert(d_mat[i] != NULL && "ddg: error in memory allocation");
+        if (!d_mat[i]) {
+            err(FALSE);
+        }
 
         d_mat[i][i] = 0;
         for (j = 0; j < n; ++j) {
@@ -98,14 +106,10 @@ double **lnorm(double **d_mat, double **w_mat, int n){
     /* create I - D^-0.5 * W * D^-0.5 */
     d_pow = pow_diag_mat(d_mat, n); /* D^-0.5 */
     ln_mat = mult_diag_mat_diag(d_pow, w_mat, n);  /* D^-0.5 * W * D^-0.5 */
-
-   /* result = square_mat_mult(d_pow, w_mat, n);
-    ln_mat = square_mat_mult(result, d_pow, n);*/
     ln_mat = i_minus_mat(ln_mat, n); /* I - D^-0.5 * W * D^-0.5 */
 
     /* free temporary mem */
     free_mat(d_pow, n);
-    /*free_mat(result, n);*/
 
     return ln_mat;
 
@@ -137,11 +141,15 @@ double **mult_diag_mat_diag(double **diag, double **mat, int n){
 
     /* initialize mult matrix */
     mult = (double **)malloc(sizeof(double *) * n);
-    assert(mult != NULL && "mult_diag_mat_diag: error in memory allocation");
+    if (!mult) {
+        err(FALSE);
+    }
 
     for (i = 0; i < n; ++i){
         mult[i] = (double *) malloc(sizeof(double) * n);
-        assert(mult[i] != NULL && "mult_diag_mat_diag: error in memory allocation");
+        if (!mult[i]) {
+            err(FALSE);
+        }
     }
 
     /* multiply */
@@ -159,11 +167,15 @@ double **mult_diag_mat_diag(double **diag, double **mat, int n){
 double **pow_diag_mat(double **diag, int n) {
     int i;
     double **mat = (double **)malloc(sizeof(double *) * n);
-    assert(mat != NULL && "pow_diag_mat: error in memory allocation");
+    if (!mat) {
+        err(FALSE);
+    }
 
     for (i = 0; i < n; ++i) {
         mat[i] = (double *)calloc(n, sizeof(double));
-        assert(mat[i] != NULL && "pow_diag_mat: error in memory allocation");
+        if (!mat[i]) {
+            err(FALSE);
+        }
 
         mat[i][i] = pow(diag[i][i], -0.5);
     }
@@ -197,26 +209,38 @@ double **Jac(double **A, int num_cols, int num_rows){
     
     /* Initiating V as Identity Matrix*/
     V = (double**)calloc(num_rows, sizeof(double*));
-    assert(V);
+    if (!V) {
+        err(FALSE);
+    }
     for(idx = 0; idx < num_rows; idx++){
         V[idx] = (double*)calloc(num_cols, sizeof(double));
-        assert(V[idx]);
+        if (!V[idx]) {
+            err(FALSE);
+        }
         V[idx][idx] = 1;
     }
     
     /* Initiating P */
     P = (double**)calloc(num_rows, sizeof(double*));
-    assert(P);
+    if (!P) {
+        err(FALSE);
+    }
     for(idx = 0; idx < num_rows; idx++){
         P[idx] = (double*)calloc(num_cols, sizeof(double));
-        assert(P[idx]);
+        if (!P[idx]) {
+            err(FALSE);
+        }
     }
     /* Initiating A_tag */
     A_tag = (double**)calloc(num_rows, sizeof(double*));
-    assert(A_tag);
+    if (!A_tag) {
+        err(FALSE);
+    }
     for(idx = 0; idx < num_rows; idx++){
         A_tag[idx] = (double*)calloc(num_cols, sizeof(double));
-        assert(A_tag[idx]);
+        if (!A_tag[idx]) {
+            err(FALSE);
+        }
     }
 
     /* Calulating initial off value of A */
@@ -226,31 +250,14 @@ double **Jac(double **A, int num_cols, int num_rows){
                 prev_off += A[idx][sub_idx]*A[idx][sub_idx];
         }
     }
-    /*
-    // printf("A:\n");
-    // print_debug(A, num_rows, num_cols);
-    // printf("V:\n");
-    // print_debug(V, num_rows, num_cols);
-    */
 
     /* Main loop of pivot. finding A_tag and changing A. 
        Finding P and multiplying to find V.
        Stopping after convergence is smaller than EPS or max rotations*/
     while ((convergence > EPS && loop++ < MAX_JAC_IT)){
-        /* printf("in line %d, loop = %d\n", __LINE__, loop); */
-
         find_Rotation_Matrix(A, P, num_rows, &i, &j, &c, &s);
-        
-        
+
         fast_Mult(V, num_rows, i, j, c, s);
-
-        /* temp_mat = square_mat_mult(V, P, num_rows);
-
-        for (idx = 0; idx < num_rows; idx++)
-            for (sub_idx = 0; sub_idx < num_cols; sub_idx++)
-                V[idx][sub_idx] = temp_mat[idx][sub_idx];
-
-        free_mat(temp_mat, num_rows); */
 
         new_off = construct_A_tag(A, A_tag, i, j, c, s, num_rows);
 
@@ -260,27 +267,25 @@ double **Jac(double **A, int num_cols, int num_rows){
         if(is_diagonal_matrix(A, num_rows)){
             convergence = 0;
         }
-        /*
-        // printf("in loop %d convergence = %f\n", loop, convergence);
-        // scanf("continue?%d", &idx);
-        // printf("A:\n");
-        // print_debug(A, num_rows, num_cols);
-        // printf("V:\n");
-        // print_debug(V, num_rows, num_cols);
-        */
 
     }
     
-    /* Place EigenValues in return_eigvals, free memory and return V */    
-    /* NEED TO SORT EIGENVALUES!! */
+    /* Place EigenValues in first row of return_array,
+     * free memory and return V */
+
     /* Initiating return_array */
     return_array = (double**)calloc(num_rows + 1, sizeof(double*));
-    assert(return_array);
+    if (!return_array) {
+        err(FALSE);
+    }
     for(idx = 0; idx < num_rows + 1; idx++){
         return_array[idx] = (double*)calloc(num_cols, sizeof(double));
-        assert(return_array[idx]);
+        if (!return_array[idx]) {
+            err(FALSE);
+        }
         for(sub_idx = 0; sub_idx < num_cols; sub_idx++)
-            return_array[idx][sub_idx] = (idx == 0) ? A[sub_idx][sub_idx] : V[idx - 1][sub_idx];
+            return_array[idx][sub_idx] = (idx == 0) ?
+                    A[sub_idx][sub_idx] : V[idx - 1][sub_idx];
     }
 
     free_mat(P, num_rows); 
@@ -292,7 +297,8 @@ double **Jac(double **A, int num_cols, int num_rows){
 
 /* Recieves pointer to A and P and constructs Rotation Matrix in P and
    values of c and s and values i and j coordinates of abs max of A */
-void find_Rotation_Matrix(double **A, double **P, int num_rows, int *i, int *j, double *c, double *s){
+void find_Rotation_Matrix(double **A, double **P, int num_rows, int *i, int *j,
+                          double *c, double *s){
     int idx_i, idx_j;
     double t, sign, theta;
     double abs_max = log(0);
@@ -327,9 +333,11 @@ void find_Rotation_Matrix(double **A, double **P, int num_rows, int *i, int *j, 
     P[*j][*i] = -*s;
 }
 
-/* Calculates A' using A_tag as temporary space and places in A using i, j cords of abs max off-
-   diag element of A and c, s calculated in Find_Rotation_Matrix and returns convergance off value */
-double construct_A_tag(double **A, double **A_tag, int i, int j, double c, double s, int num_rows){
+/* Calculates A' using A_tag as temporary space and places in A
+ * using i, j cords of abs max off-diag element of A and c, s calculated in
+ * Find_Rotation_Matrix and returns convergance off value */
+double construct_A_tag(double **A, double **A_tag, int i, int j, double c,
+                       double s, int num_rows){
     int r, ind, sub_ind;
     double A_tag_off = 0;
     for(r = 0; r < num_rows; r++){
@@ -353,7 +361,7 @@ double construct_A_tag(double **A, double **A_tag, int i, int j, double c, doubl
         A[j][r] = A_tag[j][r];
     }
 
-    /* Calulating convergence off value of new A */
+    /* Calculating convergence off value of new A */
     for(ind = 0; ind < num_rows; ind++){
         for(sub_ind = 0; sub_ind < num_rows; sub_ind++){
             if(ind != sub_ind)
@@ -363,25 +371,6 @@ double construct_A_tag(double **A, double **A_tag, int i, int j, double c, doubl
     return A_tag_off;
 }
 
-/* function to multiply two square matrices */
-double **square_mat_mult(double **first, double **second, int N){
-    int i, j, k;
-    double **result;
-
-    result = (double **) malloc(sizeof(double *) * N);
-    assert(result != NULL && "square_mat_mult: error in memory allocation");
-    for (i = 0; i < N; ++i) {
-        result[i] = (double *) malloc(sizeof(double) * N);
-        assert(result[i] != NULL && "square_mat_mult: error in memory allocation");
-    }
-
-    for (i = 0; i < N; i++)
-        for (j = 0; j < N; j++)
-            for (k = 0; k < N; k++)
-                result[i][j] += first[i][k] * second[k][j];
-
-    return result;
-}
 
 /* Multiply */
 void fast_Mult(double **V, int num_rows, int i, int j, double c, double s){

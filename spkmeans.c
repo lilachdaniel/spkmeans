@@ -2,13 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <assert.h>
 #include <string.h>
 
-double **collect(char *input_filename, int sum_vectors, int vec_size);
-void find_lengths_and_amount(char *input_filename, int *size_vec_amount_vecs);
-void print_mat(double ** mat, int size); 
-void print_Jac(double ** mat, int size); 
 
 enum Goal {
     WAM = 0,
@@ -18,19 +13,17 @@ enum Goal {
 };
 
 int main(int argc, char *argv[]){
-    int vec_size, sum_vecs, *size_vec_amount_vecs;
+    int vec_size, sum_vecs;
     double **vectors, **W, **D, **L, **J;
     enum Goal gl;
+    int size_vec_amount_vecs[2];
 
-    size_vec_amount_vecs = (int*)malloc(2*sizeof(int));
-    assert(size_vec_amount_vecs);
-
-    if(argc != 3) goto term_input;
-    if(!strcmp(argv[1], "wam")) gl = WAM;
-    else if(!strcmp(argv[1], "ddg")) gl = DDG;
-    else if(!strcmp(argv[1], "lnorm")) gl = LNORM;
-    else if(!strcmp(argv[1], "jacobi")) gl = JACOBI;
-    else goto term_input;
+    if (argc != 3) err(TRUE);
+    if (!strcmp(argv[1], "wam")) gl = WAM;
+    else if (!strcmp(argv[1], "ddg")) gl = DDG;
+    else if (!strcmp(argv[1], "lnorm")) gl = LNORM;
+    else if (!strcmp(argv[1], "jacobi")) gl = JACOBI;
+    else err(TRUE);
 
     /* Finding length of vectors and amount of vectors*/
     find_lengths_and_amount(argv[2], size_vec_amount_vecs);
@@ -45,7 +38,7 @@ int main(int argc, char *argv[]){
             W = wam(vectors, sum_vecs, vec_size);
             print_mat(W, sum_vecs);
             free_mat(W, sum_vecs); 
-            exit(0);
+            return 0;
         
         case(DDG):
             W = wam(vectors, sum_vecs, vec_size);
@@ -55,7 +48,7 @@ int main(int argc, char *argv[]){
         
             free_mat(W, sum_vecs);
             free_mat(D, sum_vecs);
-            exit(0);
+            return 0;
         
         case(LNORM):
             W = wam(vectors, sum_vecs, vec_size);
@@ -67,7 +60,7 @@ int main(int argc, char *argv[]){
             free_mat(W, sum_vecs);
             free_mat(D, sum_vecs);
             free_mat(L, sum_vecs);
-            exit(0);
+            return 0;
         
         case(JACOBI):
             J = Jac(vectors, sum_vecs, vec_size);         
@@ -75,20 +68,15 @@ int main(int argc, char *argv[]){
             print_Jac(J, sum_vecs);
 
             free_mat(J, sum_vecs + 1);
-            exit(0);
+            return 0;
+
         default:
-            goto term_input;
-            break;
+            err(TRUE);
     }
-
-
-
-term_input:
-    printf("Invalid Input!");
-    exit(1);
+    return 1;
 }
 
-
+/* Creates a matrix of vectors from given file */
 double **collect(char *input_filename, int sum_vectors, int vec_size){
     int i = 0, j = 0;
     double tmp;
@@ -96,22 +84,19 @@ double **collect(char *input_filename, int sum_vectors, int vec_size){
 
     FILE *ifp = NULL;
     ifp = fopen(input_filename, "r");
-    if(ifp==NULL){
-        printf("An Error Has Occurred");
-        exit(1);
-        }
+    if(!ifp){
+        err(FALSE);
+    }
 
     /* Allocating memory for array of vectors*/
     vectors = (double**)malloc(sum_vectors*sizeof(double*));
-    if(vectors==NULL){
-        printf("An Error Has Occurred");
-        exit(1);
-        }
+    if(!vectors){
+        err(FALSE);
+    }
     for (i = 0; i < sum_vectors; i++){
         vectors[i] = (double*)malloc(vec_size*sizeof(double));
-        if(vectors[i]==NULL){
-        printf("An Error Has Occurred");
-        exit(1);
+        if(!vectors[i]){
+            err(TRUE);
         }
     }
 
@@ -129,6 +114,7 @@ double **collect(char *input_filename, int sum_vectors, int vec_size){
     return vectors;
 }
 
+/* Receives square matrix and prints it */
 void print_mat(double ** mat, int size){
     int i, j;
     for (i = 0; i < size; i++){
@@ -140,26 +126,24 @@ void print_mat(double ** mat, int size){
     }
 }
 
+/* Reads file to find amount of vectors and their length */
 void find_lengths_and_amount(char *input_filename, int *size_vec_amount_vecs){
-
     int sum_vectors = 0, sum_cords = 0;
     char c;
 
     FILE *ifp = NULL;
     ifp = fopen(input_filename, "r");
-    if(ifp==NULL){
-        printf("An Error Has Occurred");
-        exit(1);
-        }
+    if(!ifp){
+        err(FALSE);
+    }
 
     /* Finding size of vector and amount of vectors*/
-    while ( ( c = fgetc( ifp ) ) != EOF ) {
+    while ((c = fgetc(ifp)) != EOF) {
         if ( c == '\n' ){
             sum_vectors++;
             sum_cords++;
         }
-        else if (c == ',')
-        {
+        else if (c == ','){
             sum_cords++;
         }
     }
@@ -169,7 +153,7 @@ void find_lengths_and_amount(char *input_filename, int *size_vec_amount_vecs){
     size_vec_amount_vecs[1] = sum_vectors;
 }
 
-
+/* Receives Jacobi matrix and prints eigenvalues and eigenvectors */
 void print_Jac(double ** mat, int size){
     int i, j;
     /* print eigenvalues */
@@ -183,7 +167,6 @@ void print_Jac(double ** mat, int size){
         if(i != size - 1) printf(",");
         else printf("\n");
     }
-    
 
     /* print eigenvectors */
     for (i = 1; i < size + 1; i++){

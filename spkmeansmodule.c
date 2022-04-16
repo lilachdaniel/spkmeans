@@ -25,11 +25,12 @@ int heuristic(int k, ind_eigenval *ind_eigenval_arr, int N);
 int cmp_by_eigenvalues(const void *a, const void *b);
 ind_eigenval* sort_indicies(double** J, int N);
 double** find_U(double** J, int N, int *k);
-
-static double **fit_c(int k, int max_it, double **centroids, double **vectors, int vec_size, int num_vecs, double eps);
+static double **fit_c(int k, int max_it, double **centroids, double **vectors,
+                      int vec_size, int num_vecs, double eps);
 int find_cent_ind(double *v, double **centroids, int k, int vec_size);
 double *add_vecs(double *v1, double *v2, int vec_size);
-int update_centroids(int k, int vec_size, double **centroids, double **sums, int *counts, double eps);
+int update_centroids(int k, int vec_size, double **centroids, double **sums,
+                     int *counts, double eps);
 double delta_norm_pow2(double *v1, double *v2, int vec_size);
 
 
@@ -54,20 +55,18 @@ static PyObject* general_capi(PyObject *self, PyObject *args){
     }
     /* Allocating memory for vectors */
     vectors = (double**)malloc(N*sizeof(double*));
-    if(vectors==NULL){
-        printf("An Error Has Occurred");
-        exit(1);
+    if(!vectors){
+        err(FALSE);
     }
 
     for(j = 0; j < N; j++){
         vectors[j] = (double*)malloc(d*sizeof(double));
-        if(vectors[j]==NULL){
-            printf("An Error Has Occurred");
-            exit(1);
+        if(!vectors[j]){
+            err(FALSE);
         }
     }
 
-    /* Transfering list of lists from PyObject py_vectors to double ** vectors */
+    /*Transferring list of lists from PyObject py_vectors to double** vectors*/
     for (i = 0; i < N; i++){
         item = PySequence_GetItem(py_vectors, i);
         for(j = 0; j < d; j++){
@@ -76,14 +75,11 @@ static PyObject* general_capi(PyObject *self, PyObject *args){
         }
     }
 
-
-
     /* for each goal the columns of the return matrix is different. */
     return_cols = N; 
     
     /* Run the C function */
-    switch (goal)
-    {
+    switch (goal) {
     case GOAL_SPK:
         result = form_T(vectors, &k, N, d); 
         return_cols = k;
@@ -110,15 +106,12 @@ static PyObject* general_capi(PyObject *self, PyObject *args){
 
     case GOAL_JACOBI:
         result = Jac(vectors, N, d);
-        /* trying lilach's way where result is one dimension bigger so I must increase N */
         N += 1;
         break;
 
     default:
-        printf("INVALID GOAL FROM PYTHON IN C API");
-        exit(1);
+        err(TRUE);
     }
-    
     
     pyresult = PyList_New(N); /* prepare list of lists to return */
 
@@ -129,12 +122,12 @@ static PyObject* general_capi(PyObject *self, PyObject *args){
         }
         PyList_SetItem(pyresult,i, Py_BuildValue("O", sub_pyresult));
     }
- 
-    
+
     free_mat(result, N);
 
-    /* Freeing vectors 
-    * (if goal was Jacobi I have increased N so I must decrease before free vectors)*/
+    /* Freeing vectors
+    * (if goal was Jacobi I have increased N
+     * so I must decrease before free vectors)*/
     if(goal == GOAL_JACOBI)
         N -=1;
 
@@ -147,31 +140,30 @@ static PyObject* general_capi(PyObject *self, PyObject *args){
  * Kmeans Methods from HW2
  * *************/
 
-static double **fit_c(int k, int max_it, double **centroids, double **vectors, int vec_size, int num_vecs, double eps){
+static double **fit_c(int k, int max_it, double **centroids, double **vectors,
+                      int vec_size, int num_vecs, double eps){
     int i, j, l, cent_ind, smaller_than_e;
     double **sums;
     int *counts;
 
-    /* Initializing sums and counts and allocating memory with starting values 0*/
+    /* Initializing sums and counts and allocating memory
+     * with starting values 0 */
     counts = (int*)malloc(k*sizeof(int));
-    if(counts==NULL){
-        printf("An Error Has Occurred");
-        exit(1);
+    if(!counts){
+        err(FALSE);
     }
     sums = (double**)malloc(k * sizeof (double *));
-    if(sums==NULL){
+    if(!sums){
         free(counts);
-        printf("An Error Has Occurred");
-        exit(1);
+        err(FALSE);
     }
 
     for(j = 0; j < k; j++){
         sums[j] = (double*)malloc(vec_size*sizeof(double));
-        if(sums[j]==NULL){
+        if(!sums[j]){
             free(counts);
             free(sums);
-            printf("An Error Has Occurred");
-            exit(1);
+            err(FALSE);
         }
     }
 
@@ -194,7 +186,8 @@ static double **fit_c(int k, int max_it, double **centroids, double **vectors, i
             counts[cent_ind]++;
         }
 
-        smaller_than_e = update_centroids(k, vec_size, centroids, sums, counts, eps);
+        smaller_than_e = update_centroids(k, vec_size, centroids,
+                                          sums, counts, eps);
         if (smaller_than_e){
             break;
         } 
@@ -236,21 +229,22 @@ int find_cent_ind(double *v, double **centroids, int k, int vec_size){
     return min_ind;
 }
 
-int update_centroids(int k, int vec_size, double **centroids, double **sums, int *counts, double eps) {
+int update_centroids(int k, int vec_size, double **centroids, double **sums,
+                     int *counts, double eps) {
     int smaller_than_e = 1; /*true = 1, false = 0*/
     int i,j,index;
     double *prev_cent;
     double delta_norm;
-    prev_cent = (double*)malloc(vec_size*sizeof(double)); /* Allocating space for 1d array of a vector*/
-    if(prev_cent==NULL){
-            free(counts);
-            for(i = 0; i < k; i++){
-                free(sums[i]);
-            }
-            free(sums);
-            printf("An Error Has Occurred");
-            exit(1);
+    /* Allocating space for 1d array of a vector*/
+    prev_cent = (double*)malloc(vec_size*sizeof(double));
+    if(!prev_cent){
+        free(counts);
+        for(i = 0; i < k; i++){
+            free(sums[i]);
         }
+        free(sums);
+        err(FALSE);
+    }
 
     /*update all k centroids*/
     for (i = 0; i < k; i++) {
@@ -262,7 +256,8 @@ int update_centroids(int k, int vec_size, double **centroids, double **sums, int
         }
 
         /*update smaller_than_e*/
-        delta_norm = pow(delta_norm_pow2(prev_cent, centroids[i], vec_size), 0.5);
+        delta_norm = pow(delta_norm_pow2(prev_cent, centroids[i], vec_size),
+                         0.5);
 
         if (delta_norm >= eps) {
             smaller_than_e = 0;
@@ -283,7 +278,8 @@ double *add_vecs(double *v1, double *v2, int vec_size) {
     return res;
 }
 
-//receive python object (=the initial centroids) and returns python object (=the final centroids)
+/* Receive python object (=the initial centroids) and returns python object
+ * (=the final centroids) */
 static PyObject* fit_capi(PyObject *self, PyObject *args) {
     
     int i, j, k, max_it, vec_size, num_vecs;
@@ -298,41 +294,35 @@ static PyObject* fit_capi(PyObject *self, PyObject *args) {
     PyObject *item;
     PyObject *sub_item;
 
-
  
-    if(!PyArg_ParseTuple(args, "iiOOiid", &k, &max_it, &py_centroids, &py_vectors, &vec_size, &num_vecs, &eps)) {
+    if(!PyArg_ParseTuple(args, "iiOOiid", &k, &max_it, &py_centroids,
+                         &py_vectors, &vec_size, &num_vecs, &eps)) {
         return NULL;
     }
 
     
-    
    /* Allocating memory for vectors and centroids */
     vectors = (double**)malloc(num_vecs*sizeof(double*));
-    if(vectors==NULL){
-        printf("An Error Has Occurred");
-        exit(1);
+    if(!vectors){
+        err(FALSE);
     }
     for(j = 0; j < num_vecs; j++){
         vectors[j] = (double*)malloc(vec_size*sizeof(double));
-        if(vectors[j]==NULL){
-
-            printf("An Error Has Occurred");
-            exit(1);
+        if(!vectors[j]){
+            err(FALSE);
         }
     }
     centroids = (double**)malloc(k*sizeof(double*));
-    if(centroids==NULL){
-        printf("An Error Has Occurred");
-        exit(1);
+    if(!centroids){
+        err(FALSE);
     }
     for(j = 0; j < k; j++){
         centroids[j] = (double*)malloc(vec_size*sizeof(double));
-        if(centroids[j]==NULL){
-            printf("An Error Has Occurred");
-            exit(1);
+        if(!centroids[j]){
+            err(FALSE);
         }
     }
-    /* Transfering list of lists from PyObject py_vectors to double ** vectors */
+    /*Transferring list of lists from PyObject py_vectors to double** vectors*/
     for (i = 0; i < num_vecs; i++){
         item = PySequence_GetItem(py_vectors, i);
         for(j = 0; j < vec_size; j++){
@@ -340,7 +330,8 @@ static PyObject* fit_capi(PyObject *self, PyObject *args) {
             vectors[i][j] = PyFloat_AsDouble(sub_item);
         }
     }
-    /* Transfering list of lists from PyObject py_centroids to double ** centriods */
+    /* Transferring list of lists from PyObject py_centroids
+     * to double** centroids */
     for (i = 0; i < k; i++){
         item = PySequence_GetItem(py_centroids, i);
         for(j = 0; j < vec_size; j++){
@@ -352,15 +343,12 @@ static PyObject* fit_capi(PyObject *self, PyObject *args) {
     pyresult = PyList_New(k);
     
     fit_result = fit_c(k, max_it, centroids, vectors, vec_size, num_vecs, eps);
-   
-    // printf("DEBUG fit_result  = \n");
-
-    // print_debug(fit_result, k, vec_size);
 
     for (i = 0; i < k; i++) {
         sub_pyresult = PyList_New(vec_size);
         for(j = 0; j < vec_size; j ++){
-            PyList_SetItem(sub_pyresult, j, Py_BuildValue("d", fit_result[i][j]));
+            PyList_SetItem(sub_pyresult, j,
+                           Py_BuildValue("d", fit_result[i][j]));
         }
         PyList_SetItem(pyresult,i, Py_BuildValue("O", sub_pyresult));
     }
@@ -394,7 +382,7 @@ static PyMethodDef capiMethods[] = {
          {"fit",
          (PyCFunction) fit_capi,
          METH_VARARGS,
-         PyDoc_STR("k-means algorithm with randomized centroids initialization")},
+         PyDoc_STR("k-means algorithm with centroids initialization")},
          {NULL, NULL, 0, NULL}
 };
 
@@ -423,35 +411,22 @@ double **form_T(double **vectors, int *k, int N, int d){
 
     W = wam(vectors, N, d);
 
-
     D = ddg(W, N);
-
-
 
     L = lnorm(D, W, N);
 
-
     J = Jac(L, N, N);
 
-
-
     U = find_U(J, N, k);
-    /*printf("this is u...\n");
-    print_debug(U, N, *k);*/
 
     T = renormalize(U, N, *k); /* function returns normalized U */
-    /*printf("this is t...\n");
-    print_debug(T, N, *k);*/
 
     free_mat(W, N);
     free_mat(D, N);
     free_mat(L, N);
     free_mat(J, N + 1);
 
-   
-
     return T;
-
 }
 
 /* Allocating space for U and putting the sorted eigenvectors in */
@@ -460,23 +435,20 @@ double** find_U(double** J, int N, int *k){
     int ind, i, j;
     double **U;
 
-    /*printf("DEBUG\n");
-    printf("print sorted eigs:\n");
-    for(i = 0; i < *k; i++)
-        printf("%f,", ind_eigenval_arr[i].eigenval);
-    printf("\n"); */
-
     *k = heuristic(*k, ind_eigenval_arr, N); 
     if (*k == 1) {
-        printf("An Error Has Occurred\n");
-        exit(1);
+        err(FALSE);
     }
-    
+
     U = (double**)malloc(N*sizeof(double*));
-    assert(U);
+    if (!U) {
+        err(FALSE);
+    }
     for(i = 0; i < N; i++){
         U[i] = (double*)malloc((*k)*sizeof(double));
-        assert(U[i]);
+        if (!U[i]) {
+            err(FALSE);
+        }
         for(j = 0; j < *k; j++){
             ind = ind_eigenval_arr[j].ind;
             U[i][j] = J[i + 1][ind];
@@ -511,8 +483,11 @@ double** renormalize(double **U, int N, int k){
 }
 
 ind_eigenval* sort_indicies(double** J, int N){
-    ind_eigenval* ind_eigenval_arr = (ind_eigenval*)malloc(sizeof(ind_eigenval)*N);
-    assert(ind_eigenval_arr);
+    ind_eigenval* ind_eigenval_arr =
+            (ind_eigenval*)malloc(sizeof(ind_eigenval)*N);
+    if (!ind_eigenval_arr) {
+        err(FALSE);
+    }
     int i;
     for (i = 0; i < N; i++) {
         ind_eigenval_arr[i].ind = i;
@@ -530,8 +505,6 @@ int cmp_by_eigenvalues(const void *a, const void *b) {
     ind_eigenval y = *(ind_eigenval*)b;
     if ( x.eigenval - y.eigenval > 0 ) return 1;
     else if ( x.eigenval - y.eigenval < 0 ) return -1;
-    /*else if (x.ind - y.ind > 0) return 1;
-    else return -1;*/
     return 0;
 }
 
@@ -543,7 +516,8 @@ int heuristic(int k, ind_eigenval *ind_eigenval_arr, int N){
         return k;
 
     for (i = 0; i < (int)(N/2); i++){
-        delta = fabs(ind_eigenval_arr[i].eigenval - ind_eigenval_arr[i+1].eigenval);
+        delta = fabs(ind_eigenval_arr[i].eigenval -
+                ind_eigenval_arr[i+1].eigenval);
         
         if(delta > delta_max){
             delta_max = delta;

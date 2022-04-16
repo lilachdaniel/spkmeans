@@ -1,0 +1,1 @@
+CMakeLists.txt not found in C:\Users\lilac\Documents\spkmeans Select CMakeLists.txt

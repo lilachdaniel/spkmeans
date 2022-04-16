@@ -5,8 +5,6 @@ from enum import Enum
 
 import spkmeansmodule as spk  # Our API
 
-
-
 GOAL_SPK = 0
 GOAL_WAM = 1
 GOAL_DDG = 2
@@ -28,11 +26,10 @@ class Goal(Enum):
 
 
 ############################
-# input: error message to print
-# prints the error message and terminates the program
+# prints the error message in case of invalid input and terminates the program
 ############################
-def term(string_to_print):
-    print(string_to_print)
+def err():
+    print("Invalid Input!")
     exit(1)
 
 
@@ -57,7 +54,6 @@ def read_file(input_filename):
 # taken from hw2
 ####################
 def print_cent(final_centroids, initial_centroid_ind):
-    # printing initial centroids indices
     k = len(initial_centroid_ind)
     n = len(final_centroids)
 
@@ -73,10 +69,8 @@ def print_cent(final_centroids, initial_centroid_ind):
         for j in range(k):
             x = final_centroids[i][j]
             if j == k - 1:
-                # print(str('%.4f' % x))
                 print(str(format(x, ".4f")), end="\n")
             else:
-                # print(str('%.4f' % x)+',', end="")
                 print(str(format(x, ".4f")) + ',', end="")
 
 
@@ -87,10 +81,8 @@ def print_mat(mat):
     for line in mat:
         for ind, elem in enumerate(line):
             if ind == len(line) - 1:
-                # print(str('%.4f' % elem))
                 print(str(format(elem, ".4f")), end="\n")
             else:
-                # print(str('%.4f' % elem)+',', end="")
                 print(str(format(elem, ".4f")) + ',', end="")
 
 ############################
@@ -98,24 +90,15 @@ def print_mat(mat):
 ############################
 def delta_norm_pow2(v1, v2):
     res = 0
-    # print("in delta_norm_pow_2, line 96, res =  ",res)
-    # print("v1 = ", v1)
-    # print("v2 = ", v2)
     for i in range(len(v1)):
-
         delta = v1[i] - v2[i]
-        # print("in delta_norm_pow_2, line 101, res =  ",res)
         res = res + delta * delta
-        # print("in delta_norm_pow_2, line 103, res =  ",res)
-    # print("in delta_norm_pow_2, line 104, res =  ",res)
     return res
 
 def dist_of_closest_cent(centroids_ind, j, vectors):
     res = float('inf')
-    # print("in dist of closest. vectors = ", vectors)
     for cent_ind in centroids_ind:
         curr_dist = delta_norm_pow2(vectors[cent_ind], vectors[j])
-        # print("in dist_of. curr_dist = ", curr_dist)
         if curr_dist < res:
             res = curr_dist
 
@@ -131,10 +114,7 @@ def kmeanspp_algo(vectors, k):
 
         for j in range(len(vectors)):
             DP[j] = (dist_of_closest_cent(centroids_ind, j, vectors))
-            # print("in loop ", j, "DP[",j,"] = ", DP[j])
         sumD = sum(DP)
-        # print("sumD = ")
-        # print(sumD)
 
         for j in range(len(vectors)):
             DP[j] /= sumD
@@ -153,7 +133,7 @@ parser.add_argument('a', type=str, nargs='+')
 args = parser.parse_args()
 
 # Confirm we received exactly 3 arguments and first argument is an integer
-if len(args.a) != 3 or not (args.a[0].isnumeric()): term("Invalid Input!")
+if len(args.a) != 3 or not (args.a[0].isnumeric()): err()
 
 k = int(args.a[0])
 goal = Goal(args.a[1])  # Enum Goal
@@ -166,11 +146,8 @@ N = len(vectors)
 d = len(vectors[0])
 
 if goal == Goal.SPK:
-    if k < 0 or k == 1: term("Invalid Input!")
-    if k >= N: term("Invalid Input!")
-
-    # print("vectors = ", vectors)
-
+    if k < 0 or k == 1: err()
+    if k >= N: err()
 
     t_mat = spk.general_capi(vectors, k, N, d, GOAL_SPK)
 
@@ -178,7 +155,6 @@ if goal == Goal.SPK:
 
     initial_centroid_ind = kmeanspp_algo(t_mat, k)
 
-    # initial_centroid_ind = np.array([172,108,164,170,185,133,13,7,3,23,134,187,11,138,184])
     initial_centroids = [t_mat[cent_ind] for cent_ind in initial_centroid_ind]
 
     final_centroids = spk.fit(k, 300, initial_centroids, t_mat, k, N, 0.0)
@@ -203,9 +179,8 @@ elif goal == Goal.JACOBI:
                 s = "0.0000"
             print(s+',', end="")
         else:
-            # print(str('%.4f' % elem))
             print(str(format(elem, ".4f")), end="\n")
 
     print_mat(eigvals_and_eigvecs[1:])
 else:
-    term("Invalid Input!")
+    err()
