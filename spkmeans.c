@@ -15,7 +15,7 @@ enum Goal {
 int main(int argc, char *argv[]){
     int vec_size, sum_vecs;
     double **vectors, **W, **D, **L, **J;
-    enum Goal gl;
+    enum Goal gl = 0; /* Arbitrary initial assignment to avoid error */ 
     int size_vec_amount_vecs[2];
 
     if (argc != 3) err(TRUE);

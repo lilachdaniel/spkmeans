@@ -43,7 +43,7 @@ double delta_norm_pow2(double *v1, double *v2, int vec_size);
  * ***************/
 static PyObject* general_capi(PyObject *self, PyObject *args){
     int k, N, d, i, j, goal, return_cols;
-    double **result, **W, **D, **vectors;
+    double **W, **D, **vectors, **result = NULL; 
     PyObject *py_vectors;
     PyObject *item;
     PyObject *sub_item;
